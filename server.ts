@@ -11,11 +11,10 @@ async function startServer() {
   
   /**
    * PORT CONFIGURATION:
-   * AI Studio requires the app to run on port 3000.
-   * If you are deploying to your own server (e.g., heart.styni.com)
-   * you can change this to 3009 or use process.env.PORT.
+   * Your server (heart.styni.com) requires port 3009.
+   * AI Studio preview requires port 3000.
    */
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3009;
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
