@@ -146,7 +146,7 @@ export const UserOnboarding = ({ onAdmin }: { onAdmin?: () => void }) => {
             <Heart size={32} fill="white" stroke="transparent" />
           </div>
         </div>
-        <h2 className="text-3xl font-black text-center mb-2 tracking-tighter uppercase italic bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-orange-500">Bloom</h2>
+        <h2 className="text-3xl font-black text-center mb-2 tracking-tighter uppercase italic bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-orange-500">BLOOM SITE</h2>
         <p className="text-gray-400 text-center text-sm font-bold uppercase tracking-widest mb-10">Pure Authentic Connection</p>
         
         <div className="space-y-4">
@@ -449,8 +449,11 @@ export const UserOnboarding = ({ onAdmin }: { onAdmin?: () => void }) => {
             onClick={finishOnboarding}
             className="w-full py-5 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-rose-200"
           >
-            Bloom My Profile
+            Launch BLOOM SITE
           </button>
+          <p className="text-[8px] font-black uppercase tracking-[0.2em] text-rose-300 text-center mt-6 flex items-center justify-center gap-2">
+            <Sparkles size={10} className="text-rose-400" /> Powered by Google AI
+          </p>
         </div>
         {renderAdminLink()}
       </motion.div>

@@ -266,7 +266,10 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
             <div className="w-10 h-10 bg-gradient-to-tr from-rose-500 to-orange-400 rounded-xl flex items-center justify-center rotate-12 group-hover:rotate-0 transition-all duration-500 shadow-lg shadow-rose-200">
               <Heart size={20} fill="white" stroke="transparent" />
             </div>
-            <span className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-orange-500 uppercase italic">Bloom</span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-orange-500 uppercase italic leading-none">BLOOM SITE</span>
+              <span className="text-[7px] font-black uppercase tracking-[0.2em] text-rose-300 mt-0.5">Powered by Google AI</span>
+            </div>
             {isAdmin && (
               <button 
                 onClick={onAdmin}
@@ -343,7 +346,7 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
         </button>
         <button className="flex flex-col items-center gap-1.5 text-rose-500 group">
           <Heart size={24} fill="currentColor" className="group-hover:scale-110 transition-transform" />
-          <span className="text-[8px] uppercase font-black tracking-widest">Bloom</span>
+          <span className="text-[8px] uppercase font-black tracking-widest">BLOOM SITE</span>
         </button>
         <div className="h-8 w-px bg-rose-100/80" />
         <button onClick={onChat} className="flex flex-col items-center gap-1.5 text-gray-400 hover:text-rose-500 transition-colors">
@@ -399,7 +402,7 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
                   <img src={selectedProfile?.photos?.[0]} className="w-full h-full object-cover" />
                 </div>
               </div>
-              <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tighter italic uppercase">It's a Bloom!</h2>
+              <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tighter italic uppercase">It's a BLOOM SITE!</h2>
               <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-10">You both matched with each other.</p>
               
               <div className="space-y-4">
