@@ -38,44 +38,32 @@ const Root = () => {
     );
   }
 
-  // Not signed in
-  if (!user) {
-    return <UserOnboarding onAdmin={() => setView('admin')} />;
-  }
-
   // Admin can access dashboard even without a profile
   if (view === 'admin' && isAdmin) {
     return <AdminDashboard onBack={() => setView('discovery')} />;
   }
 
-  // No profile yet, go to onboarding
-  if (!profile) {
-    return <UserOnboarding onAdmin={() => setView('admin')} />;
-  }
-
-  if (view === 'admin' && isAdmin) {
-    return <AdminDashboard onBack={() => setView('discovery')} />;
-  }
-
-  if (view === 'edit-profile') {
+  if (view === 'edit-profile' && profile) {
     return <EditProfile onBack={() => setView('discovery')} />;
   }
 
-  if (view === 'messaging') {
+  if (view === 'messaging' && profile) {
     return <Messaging onBack={() => setView('discovery')} onUpgrade={() => setView('premium')} activeMatchId={activeMatchId} />;
   }
 
-  if (view === 'premium') {
+  if (view === 'premium' && profile) {
     return <PremiumUpgrade onBack={() => setView('discovery')} />;
   }
 
-  // Standard user with profile
+  // Not signed in or no profile yet, but we want to show Discovery as the homepage
+  // We'll pass a prop to Discovery to show auth triggers if needed or handle it internally
   return (
     <Discovery 
       onEditProfile={() => setView('edit-profile')} 
       onChat={() => setView('messaging')}
       onUpgrade={() => setView('premium')}
       onAdmin={() => setView('admin')}
+      onAuth={() => setView('discovery')} // Placeholder if we need to force re-render
     />
   );
 };

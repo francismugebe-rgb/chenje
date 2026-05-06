@@ -9,6 +9,8 @@ import {
 import { UserProfile } from '../types';
 import { useAuth } from '../AuthContext';
 
+import { UserOnboarding } from './UserOnboarding';
+
 const ProfileCard = ({ profile, onClick }: { profile: UserProfile; onClick: () => void }) => {
   return (
     <motion.div
@@ -214,41 +216,66 @@ const ProfileDetails = ({ profile, onClose, onMatch }: { profile: UserProfile; o
   );
 };
 
-export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEditProfile: () => void; onChat: () => void; onUpgrade: () => void; onAdmin: () => void }) => {
-  const { profile, isAdmin } = useAuth();
+export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin, onAuth }: { onEditProfile: () => void; onChat: () => void; onUpgrade: () => void; onAdmin: () => void; onAuth?: () => void }) => {
+  const { user, profile, isAdmin } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const [matchedId, setMatchedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll);
-    if (profile) fetchProfiles();
+    fetchProfiles();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [profile]);
 
   const fetchProfiles = async () => {
     setLoading(true);
     try {
+      // Base query for basic discovery
       let q = query(
         collection(db, 'users'),
         where('role', '==', 'user'),
         where('isBanned', '==', false),
-        limit(50)
+        limit(100)
       );
-      
-      // Basic gender filter logic: Men look for Ladies, etc.
-      // In a real app we'd use complex queries, here we'll filter on client for simplicity
-      // and only if gender preference is explicitly set.
       
       const snap = await getDocs(q);
       let list = snap.docs.map(doc => doc.data() as UserProfile)
         .filter(u => u.uid !== profile?.uid);
 
-      if (profile?.preferences?.genderPreference && profile.preferences.genderPreference !== 'any') {
-        list = list.filter(u => u.gender === profile.preferences?.genderPreference);
+      // Apply the user requested filters: Ladies, 18-25, South Africa or Zimbabwe
+      // This logic handles both guest browse and logged-in discovery
+      list = list.filter(u => {
+        // Gender filter: Ladies
+        if (u.gender !== 'female') return false;
+        
+        // Age filter: 18 - 25
+        if (u.age < 18 || u.age > 25) return false;
+        
+        // Location filter: South Africa or Zimbabwe
+        const loc = (u.location || '').toLowerCase();
+        const isInRegion = loc.includes('zimbabwe') || 
+                          loc.includes('south africa') || 
+                          loc.includes('harare') || 
+                          loc.includes('bulawayo') || 
+                          loc.includes('johannesburg') || 
+                          loc.includes('cape town') || 
+                          loc.includes('durban') || 
+                          loc.includes('pretoria') ||
+                          loc.includes('mutare') ||
+                          loc.includes('gweru');
+        
+        return isInRegion;
+      });
+
+      // If still not enough, maybe return more broad ladies from the region
+      if (list.length < 5) {
+        list = snap.docs.map(doc => doc.data() as UserProfile)
+          .filter(u => u.uid !== profile?.uid && u.gender === 'female');
       }
       
       setProfiles(list);
@@ -256,6 +283,23 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
       console.error(err);
     }
     setLoading(false);
+  };
+
+  const handleGuestAction = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setShowAuthModal(true);
+  };
+
+  const ProfileDetailsWrapped = ({ profile, onClose, onMatch }: { profile: UserProfile; onClose: () => void; onMatch: (matchId: string) => void }) => {
+    return (
+      <div onClick={() => !user && handleGuestAction()}>
+         <ProfileDetails 
+            profile={profile} 
+            onClose={onClose} 
+            onMatch={onMatch}
+          />
+      </div>
+    );
   };
 
   return (
@@ -288,29 +332,51 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
           </div>
 
           <div className="flex items-center gap-6">
-             <button className="p-3 bg-white rounded-full text-rose-500 shadow-lg shadow-rose-900/5 hover:bg-rose-50 transition-all relative group">
-                <Bell size={20} />
-                <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-orange-400 rounded-full border-2 border-white" />
-             </button>
-             <div className="w-10 h-10 rounded-xl bg-slate-200 border-2 border-white shadow-xl overflow-hidden cursor-pointer" onClick={onEditProfile}>
-                <img src={profile?.photos?.[0] || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100&h=100'} alt="Avatar" className="w-full h-full object-cover" />
-             </div>
+             {profile ? (
+               <>
+                 <button className="p-3 bg-white rounded-full text-rose-500 shadow-lg shadow-rose-900/5 hover:bg-rose-50 transition-all relative group">
+                    <Bell size={20} />
+                    <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-orange-400 rounded-full border-2 border-white" />
+                 </button>
+                 <div className="w-10 h-10 rounded-xl bg-slate-200 border-2 border-white shadow-xl overflow-hidden cursor-pointer" onClick={onEditProfile}>
+                    <img src={profile?.photos?.[0] || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100&h=100'} alt="Avatar" className="w-full h-full object-cover" />
+                 </div>
+               </>
+             ) : (
+               <div className="flex items-center gap-4">
+                 <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-rose-500 transition-colors"
+                 >
+                   Log In
+                 </button>
+                 <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-200 hover:scale-105 active:scale-95 transition-all"
+                 >
+                   Sign Up
+                 </button>
+               </div>
+             )}
           </div>
         </div>
       </nav>
 
       <main className="pt-40 pb-40 px-6 md:px-10 max-w-[1400px] mx-auto">
-        <div className="mb-12 flex flex-wrap items-center gap-3">
-          <button className="px-6 py-2.5 bg-white rounded-full shadow-lg shadow-rose-900/5 border border-rose-100 text-[10px] font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 transition-all">Ages 18 - 35</button>
-          <button className="px-6 py-2.5 bg-rose-500 rounded-full shadow-xl shadow-rose-200 text-[10px] font-black text-white uppercase tracking-widest hover:bg-rose-600 transition-all">Nearby (50mi)</button>
-          <button className="px-6 py-2.5 bg-white rounded-full shadow-lg shadow-rose-900/5 border border-rose-100 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-rose-50 transition-all">Verified Only</button>
-          <button className="px-6 py-2.5 bg-white rounded-full shadow-lg shadow-rose-900/5 border border-rose-100 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center gap-2">
-            <Filter size={14} /> Filters
-          </button>
-          
-          <div className="ml-auto hidden xl:flex items-center gap-3">
-             <span className="text-[10px] font-black text-rose-300 uppercase tracking-[0.3em]">Sorted by</span>
-             <span className="text-[10px] font-black text-gray-800 uppercase tracking-widest cursor-pointer hover:text-rose-500 transition-colors">Recent Activity</span>
+        <div className="mb-12 flex flex-col md:flex-row md:items-center gap-6">
+          <div>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-gray-900 leading-none">
+              DISCOVER <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-orange-500 italic">BLOOMS</span>
+            </h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-rose-300 mt-2">Single ladies from South Africa & Zimbabwe • 18-25</p>
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            <button className="px-6 py-2.5 bg-rose-500 rounded-full shadow-xl shadow-rose-200 text-[10px] font-black text-white uppercase tracking-widest hover:bg-rose-600 transition-all">Ladies 18 - 25</button>
+            <button className="px-6 py-2.5 bg-white rounded-full shadow-lg shadow-rose-900/5 border border-rose-100 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-rose-50 transition-all">South Africa / Zimbabwe</button>
+            <button className="px-6 py-2.5 bg-white rounded-full shadow-lg shadow-rose-900/5 border border-rose-100 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center gap-2">
+              <Filter size={14} /> Filters
+            </button>
           </div>
         </div>
 
@@ -348,11 +414,11 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
           <span className="text-[8px] uppercase font-black tracking-widest">BLOOM SITE</span>
         </button>
         <div className="h-8 w-px bg-rose-100/80" />
-        <button onClick={onChat} className="flex flex-col items-center gap-1.5 text-gray-400 hover:text-rose-500 transition-colors">
+        <button onClick={profile ? onChat : () => handleGuestAction()} className="flex flex-col items-center gap-1.5 text-gray-400 hover:text-rose-500 transition-colors">
           <MessageCircle size={22} />
           <span className="text-[8px] uppercase font-black tracking-widest">Chat</span>
         </button>
-        <button onClick={onEditProfile} className="flex flex-col items-center gap-1.5 text-gray-400 hover:text-rose-500 transition-colors">
+        <button onClick={profile ? onEditProfile : () => handleGuestAction()} className="flex flex-col items-center gap-1.5 text-gray-400 hover:text-rose-500 transition-colors">
           <UserIcon size={22} />
           <span className="text-[8px] uppercase font-black tracking-widest">Profile</span>
         </button>
@@ -378,7 +444,7 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
 
       <AnimatePresence>
         {selectedProfile && (
-          <ProfileDetails 
+          <ProfileDetailsWrapped 
             profile={selectedProfile} 
             onClose={() => setSelectedProfile(null)} 
             onMatch={(id) => setMatchedId(id)}
@@ -423,6 +489,20 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
               </div>
             </div>
           </motion.div>
+        )}
+
+        {showAuthModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-rose-950/20 backdrop-blur-3xl p-4 overflow-y-auto">
+            <div className="relative w-full max-w-2xl">
+              <button 
+                onClick={() => setShowAuthModal(false)}
+                className="absolute top-6 right-6 z-[110] p-2 bg-white/80 rounded-full hover:bg-rose-50 transition-colors shadow-lg"
+              >
+                <X size={24} />
+              </button>
+              <UserOnboarding />
+            </div>
+          </div>
         )}
       </AnimatePresence>
     </div>
