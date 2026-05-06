@@ -9,7 +9,13 @@ service cloud.firestore {
     // 3. Primitives
     function isSignedIn() { return request.auth != null; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
-    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isAdmin() { 
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "FRANCISMUGEBE@gmail.com" ||
+        request.auth.token.email == "francismugebe@gmail.com"
+      ); 
+    }
     function getUserData(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
     function isPremium(uid) { 
       let data = getUserData(uid);
@@ -21,10 +27,10 @@ service cloud.firestore {
 
     // 4. Validation Helpers
     function isValidUser(data) {
-      return data.uid is string && data.uid == request.auth.uid &&
-             data.email is string && data.email.size() <= 100 &&
+      return data.uid is string && 
+             (data.email is string || isAdmin()) && 
              data.firstName is string && data.firstName.size() <= 50 &&
-             data.lastName is string && data.lastName.size() <= 50 &&
+             data.lastName is string && data.lastName.size() <= 60 &&
              data.age is int && data.age >= 18 &&
              data.gender in ['male', 'female', 'other'] &&
              data.premiumTier in ['free', 'gold', 'platinum', 'vip'] &&
@@ -34,13 +40,13 @@ service cloud.firestore {
     // --- Admin Collection ---
     match /admins/{uid} {
       allow read: if isSignedIn();
-      allow write: if false;
+      allow write: if isAdmin();
     }
 
     // --- Users Collection ---
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isOwner(userId) && isValidUser(incoming()) && incoming().role == 'user' && incoming().premiumTier == 'free';
+      allow read: if true;
+      allow create: if isAdmin() || (isSignedIn() && isOwner(userId) && isValidUser(incoming()) && incoming().role == 'user' && incoming().premiumTier == 'free');
       allow update: if isAdmin() || (
         isOwner(userId) && 
         isValidUser(incoming()) &&
@@ -54,7 +60,7 @@ service cloud.firestore {
 
     // --- Likes ---
     match /likes/{likeId} {
-      allow read: if isSignedIn() && (incoming().from == request.auth.uid || incoming().to == request.auth.uid);
+      allow read: if isSignedIn() && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
       allow create: if isSignedIn() && incoming().from == request.auth.uid;
       allow delete: if isSignedIn() && existing().from == request.auth.uid;
     }

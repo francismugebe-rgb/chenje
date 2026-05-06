@@ -224,6 +224,44 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin, onAuth }:
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const seedProfiles = async () => {
+    if (isSeeding) return;
+    setIsSeeding(true);
+    try {
+      const seedData = [
+        { firstName: 'Zinhle', lastName: 'Mdluli', age: 22, location: 'Johannesburg, South Africa', bio: 'Black excellence in the making. Law student and soul music lover.', gender: 'female', interests: ['Law', 'Music', 'Travel'], photos: ['https://images.unsplash.com/photo-1523910367623-6827e2db34a9?auto=format&fit=crop&q=80&w=400&h=600'] },
+        { firstName: 'Chido', lastName: 'Moyo', age: 24, location: 'Harare, Zimbabwe', bio: 'Proudly Zimbabwean. Creative director and coffee lover.', gender: 'female', interests: ['Art', 'Coffee', 'Photography'], photos: ['https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&q=80&w=400&h=600'] },
+        { firstName: 'Lerato', lastName: 'Khumalo', age: 20, location: 'Pretoria, South Africa', bio: 'South African girl living her best life. Dancing is my language.', gender: 'female', interests: ['Dance', 'Fashion', 'Fitness'], photos: ['https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400&h=600'] },
+        { firstName: 'Nomalanga', lastName: 'Sibanda', age: 25, location: 'Bulawayo, Zimbabwe', bio: 'Melanin queen. Tech enthusiast and nature lover.', gender: 'female', interests: ['Tech', 'Hiking', 'Reading'], photos: ['https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400&h=600'] },
+        { firstName: 'Thandi', lastName: 'Dlamini', age: 23, location: 'Durban, South Africa', bio: 'Zulu girl with a beach soul. Always smiling.', gender: 'female', interests: ['Surfing', 'Yoga', 'Cooking'], photos: ['https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=400&h=600'] },
+        { firstName: 'Farai', lastName: 'Gumbo', age: 19, location: 'Mutare, Zimbabwe', bio: 'Zimbabwean beauty with a passion for gardening.', gender: 'female', interests: ['Science', 'Gardening', 'Jazz'], photos: ['https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&q=80&w=400&h=600'] },
+        { firstName: 'Nomvula', lastName: 'Zuma', age: 21, location: 'Cape Town, South Africa', bio: 'Black girl magic. Mountains and music.', gender: 'female', interests: ['Hiking', 'Music', 'Poetry'], photos: ['https://images.unsplash.com/photo-1507152832244-10d45c7eda57?auto=format&fit=crop&q=80&w=400&h=600'] },
+        { firstName: 'Tariro', lastName: 'Chauke', age: 24, location: 'Gweru, Zimbabwe', bio: 'Authentically Zimbabwean. Lover of books.', gender: 'female', interests: ['Reading', 'Writing', 'Cooking'], photos: ['https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400&h=600'] },
+      ];
+
+      for (const item of seedData) {
+        const id = `seed_${Math.random().toString(36).substr(2, 9)}`;
+        await setDoc(doc(db, 'users', id), {
+          ...item,
+          uid: id,
+          email: `${item.firstName.toLowerCase()}@bloom.site`,
+          role: 'user',
+          isVerified: true,
+          isBanned: false,
+          premiumTier: 'free',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          preferences: { ageMin: 18, ageMax: 35, genderPreference: 'any' }
+        });
+      }
+      fetchProfiles();
+    } catch (err) {
+      console.error("Auto-seed error:", err);
+    }
+    setIsSeeding(false);
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -279,6 +317,11 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin, onAuth }:
       }
       
       setProfiles(list);
+
+      // Trigger auto-seed if database is empty or too light AND user is signed in (to have permissions)
+      if (user && list.length < 5 && snap.docs.length < 10 && !isSeeding) {
+        seedProfiles();
+      }
     } catch (err) {
       console.error(err);
     }
@@ -399,6 +442,26 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin, onAuth }:
                 />
               </motion.div>
             ))}
+          </div>
+        )}
+        
+        {!loading && profiles.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-40 text-center space-y-6">
+            <div className="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center">
+              <Search size={40} className="text-rose-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight">NO BLOOMS FOUND YET</h2>
+              <p className="text-gray-400 text-sm mt-2 max-w-xs mx-auto">We're just getting started! Sign up to be the first to bloom in your area.</p>
+            </div>
+            {!user && (
+              <button 
+                onClick={() => setShowAuthModal(true)}
+                className="px-8 py-4 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-rose-200"
+              >
+                Join the Community
+              </button>
+            )}
           </div>
         )}
       </main>
