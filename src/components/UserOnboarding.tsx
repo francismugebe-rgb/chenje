@@ -451,9 +451,6 @@ export const UserOnboarding = ({ onAdmin }: { onAdmin?: () => void }) => {
           >
             Launch BLOOM SITE
           </button>
-          <p className="text-[8px] font-black uppercase tracking-[0.2em] text-rose-300 text-center mt-6 flex items-center justify-center gap-2">
-            <Sparkles size={10} className="text-rose-400" /> Powered by Google AI
-          </p>
         </div>
         {renderAdminLink()}
       </motion.div>

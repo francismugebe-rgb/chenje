@@ -268,7 +268,6 @@ export const Discovery = ({ onEditProfile, onChat, onUpgrade, onAdmin }: { onEdi
             </div>
             <div className="flex flex-col">
               <span className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-orange-500 uppercase italic leading-none">BLOOM SITE</span>
-              <span className="text-[7px] font-black uppercase tracking-[0.2em] text-rose-300 mt-0.5">Powered by Google AI</span>
             </div>
             {isAdmin && (
               <button 
