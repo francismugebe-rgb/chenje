@@ -18,27 +18,40 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    console.log("Starting server in DEVELOPMENT mode with Vite middleware");
+    console.log("Mode: DEVELOPMENT (Vite Middleware)");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    console.log("Starting server in PRODUCTION mode");
-    // Serve static files in production
-    const distPath = path.join(process.cwd(), "dist");
-    console.log(`Serving static files from: ${distPath}`);
+    console.log("Mode: PRODUCTION (Static Assets)");
+    // Use __dirname for more reliable path resolution in different environments
+    const distPath = path.resolve(__dirname, "dist");
+    
+    console.log(`Checking for dist folder at: ${distPath}`);
+    
     app.use(express.static(distPath));
     
     // SPA Fallback: handle client-side routing
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      // If it's an API request (if you add any) or an asset request that missed, return 404
+      if (req.path.startsWith("/api") || (req.path.includes(".") && !req.path.endsWith(".html"))) {
+        return res.status(404).send("Not found");
+      }
+      
+      const indexPath = path.join(distPath, "index.html");
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error(`Error sending index.html from ${indexPath}: ${err.message}`);
+          res.status(500).send("Application not built. Please run 'npm run build' on the server.");
+        }
+      });
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running at http://localhost:${PORT}`);
   });
 }
 
