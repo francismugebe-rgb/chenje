@@ -11,10 +11,10 @@ async function startServer() {
   
   /**
    * PORT CONFIGURATION:
-   * AI Studio preview requires port 3000.
-   * On your server (heart.styni.com), you can run with: PORT=3009 npm start
+   * AI Studio preview usually requires port 3000.
+   * On your server (heart.styni.com), we use 3009 to avoid conflicts.
    */
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = Number(process.env.PORT) || 3009;
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
