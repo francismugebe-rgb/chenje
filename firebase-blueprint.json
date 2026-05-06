@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Core user data for the dating platform.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "premiumTier": { "type": "string", "enum": ["free", "gold", "platinum", "vip"] },
+        "premiumUntil": { "type": "string", "format": "date-time" },
+        "age": { "type": "integer" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "location": { "type": "string" },
+        "bio": { "type": "string" },
+        "photos": { "type": "array", "items": { "type": "string" } },
+        "interests": { "type": "array", "items": { "type": "string" } },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "ageMin": { "type": "integer" },
+            "ageMax": { "type": "integer" },
+            "genderPreference": { "type": "string", "enum": ["male", "female", "any"] }
+          }
+        },
+        "role": { "type": "string", "enum": ["user", "admin", "moderator"] },
+        "isVerified": { "type": "boolean" },
+        "isBanned": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "firstName", "lastName", "age", "gender", "role", "premiumTier"]
+    },
+    "Report": {
+      "title": "User Report",
+      "description": "Reports filed against users for safety moderation.",
+      "type": "object",
+      "properties": {
+        "reporterId": { "type": "string" },
+        "reportedId": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Individual chat message.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["image", "video", "audio"] },
+        "status": { "type": "string", "enum": ["sent", "delivered", "read"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Primary user profiles."
+    },
+    "/likes/{likeId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Tracks user likes for match generation."
+    },
+    "/whatsappNumbers/{userId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "number": { "type": "string" }
+        }
+      },
+      "description": "Secure storage for WhatsApp numbers, accessible only to premium users."
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Safety reports."
+    },
+    "/matches/{matchId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "users": { "type": "array", "items": { "type": "string" } },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "lastMessage": { "type": "string" },
+          "lastMessageAt": { "type": "string", "format": "date-time" },
+          "lastMessageSenderId": { "type": "string" },
+          "unreadCount": { "type": "object" },
+          "messageCount": { "type": "object" }
+        }
+      },
+      "description": "User matches."
+    },
+    "/matches/{matchId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat transcript."
+    }
+  }
+}
