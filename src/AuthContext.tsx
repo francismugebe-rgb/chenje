@@ -2,11 +2,11 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
-import { UserProfile } from './types';
+import { User as UserType } from './types';
 
 interface AuthContextType {
   user: User | null;
-  profile: UserProfile | null;
+  profile: UserType | null;
   loading: boolean;
   isAdmin: boolean;
 }
@@ -22,7 +22,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userRef = doc(db, 'users', user.uid);
       const unsubscribeProfile = onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {
-          const data = docSnap.data() as UserProfile;
+          const data = docSnap.data() as UserType;
           setProfile(data);
         } else {
           setProfile(null);

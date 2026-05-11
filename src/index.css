@@ -1,1 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Outfit", sans-serif;
+
+  --color-brand-green: #2D5A27;
+  --color-brand-gold: #F7B500;
+  --color-brand-red: #BC2121;
+  --color-brand-earth: #8B4513;
+  --color-brand-ivory: #FDFCF8;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-ivory text-slate-900 font-sans;
+  }
+}
+
+.shadow-soft {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-trust {
+  box-shadow: 0 20px 40px -15px rgba(45, 90, 39, 0.1);
+}
+
+.glass-morphism {
+  @apply bg-white/70 backdrop-blur-xl border border-white/20;
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-green to-emerald-600;
+}

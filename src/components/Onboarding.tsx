@@ -1,0 +1,357 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { UserPlus, Briefcase, ChevronRight, Phone, MessageSquare, MapPin, Upload, Star, CheckCircle2 } from 'lucide-react';
+import { auth, db } from '../lib/firebase';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { UserRole, WORKER_CATEGORIES, AvailabilityStatus, EmployerStatus } from '../types';
+
+export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [verificationFile, setVerificationFile] = useState<string | null>(null);
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    firstName: '',
+    surname: '',
+    phone: '',
+    whatsapp: '',
+    location: '',
+    category: 'Maid',
+    experience: 0,
+    age: 18,
+    gender: 'female' as 'male' | 'female',
+    salary: '',
+    bio: '',
+    employerStatus: 'Mr' as EmployerStatus
+  });
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      // Basic profile creation
+      await setDoc(doc(db, 'users', result.user.uid), {
+        uid: result.user.uid,
+        email: result.user.email,
+        role: role || 'employer',
+        firstName: formData.firstName || result.user.displayName?.split(' ')[0] || '',
+        surname: formData.surname || result.user.displayName?.split(' ').slice(1).join(' ') || '',
+        phone: formData.phone,
+        whatsapp: formData.whatsapp,
+        location: formData.location,
+        photoURL: result.user.photoURL,
+        employerStatus: role === 'employer' ? formData.employerStatus : null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      if (role === 'worker') {
+        await setDoc(doc(db, 'worker_profiles', result.user.uid), {
+          userId: result.user.uid,
+          category: formData.category,
+          age: Number(formData.age),
+          gender: formData.gender,
+          yearsExperience: Number(formData.experience),
+          languages: ['English', 'Shona'],
+          skills: [],
+          salaryExpectation: 'Negotiable',
+          availability: 'Available' as AvailabilityStatus,
+          bio: formData.bio,
+          isVerified: false,
+          hasPoliceClearance: false,
+          workPhotos: [],
+          rating: 0,
+          reviewCount: 0
+        });
+
+        if (verificationFile) {
+          const { addDoc, collection } = await import('firebase/firestore');
+          await addDoc(collection(db, 'verifications'), {
+            userId: result.user.uid,
+            status: 'pending',
+            policeClearanceUrl: verificationFile,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+
+      onComplete();
+    } catch (err) {
+      console.error("Sign in error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 sm:p-10">
+      <div className="w-full max-w-4xl bg-white rounded-[40px] shadow-soft overflow-hidden grid lg:grid-cols-2">
+        <div className="hidden lg:block bg-brand-green p-12 text-white relative">
+          <div className="relative z-10">
+            <h2 className="text-4xl font-black mb-6 tracking-tighter">Your safety matters most.</h2>
+            <p className="text-emerald-100 mb-10 leading-relaxed">
+              We verify every worker's police clearance and every employer's legitimacy to ensure a professional experience for both parties.
+            </p>
+            <div className="space-y-4">
+              {[
+                "Police Clearance Checks",
+                "WhatsApp Powered Hiring",
+                "Trusted Reviews",
+                "Secure Payments"
+              ].map(item => (
+                <div key={item} className="flex items-center gap-3">
+                  <CheckCircle2 size={20} className="text-brand-gold" />
+                  <span className="text-sm font-semibold">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+        </div>
+
+        <div className="p-8 md:p-12">
+          <AnimatePresence mode="wait">
+            {!role ? (
+              <motion.div 
+                key="role-select"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2 uppercase">ZIMBABWE MAIDS CENTRE</h1>
+                <p className="text-slate-400 text-sm mb-8 uppercase font-bold tracking-widest leading-none">Safe & Professional Domestic Help</p>
+                
+                <div className="grid gap-4">
+                  <button 
+                    onClick={() => setRole('employer')}
+                    className="group flex items-center gap-6 p-6 rounded-3xl border-2 border-slate-50 hover:border-brand-gold hover:bg-brand-gold/5 transition-all text-left"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold group-hover:scale-110 transition-transform">
+                      <UserPlus size={32} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-slate-800">I'm an Employer</h4>
+                      <p className="text-slate-400 text-sm">Hiring a helper for my home</p>
+                    </div>
+                    <ChevronRight className="ml-auto text-slate-300 group-hover:translate-x-1 transition-transform" />
+                  </button>
+
+                  <button 
+                    onClick={() => setRole('worker')}
+                    className="group flex items-center gap-6 p-6 rounded-3xl border-2 border-slate-50 hover:border-brand-green hover:bg-brand-green/5 transition-all text-left"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-brand-green/10 flex items-center justify-center text-brand-green group-hover:scale-110 transition-transform">
+                      <Briefcase size={32} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-slate-800">I'm a Worker</h4>
+                      <p className="text-slate-400 text-sm">Looking for domestic work</p>
+                    </div>
+                    <ChevronRight className="ml-auto text-slate-300 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+                
+                <p className="mt-8 text-center text-xs text-slate-400">
+                  By joining, you agree to our Terms of Use and Privacy Policy.
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="form-steps"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <button onClick={() => setRole(null)} className="text-xs font-bold text-brand-green uppercase tracking-widest mb-6 block">← Back to role selection</button>
+                
+                <h2 className="text-2xl font-black text-slate-800 mb-2">
+                  {role === 'worker' ? 'Professional Details' : 'Employer Details'}
+                </h2>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">Tell us a bit about yourself</p>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">First Name</label>
+                      <input 
+                        className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green focus:ring-4 focus:ring-brand-green/5 transition-all"
+                        value={formData.firstName}
+                        onChange={e => setFormData({...formData, firstName: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Surname</label>
+                      <input 
+                        className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green focus:ring-4 focus:ring-brand-green/5 transition-all"
+                        value={formData.surname}
+                        onChange={e => setFormData({...formData, surname: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  {role === 'worker' && step === 1 && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Category</label>
+                          <select 
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100 bg-white"
+                            value={formData.category}
+                            onChange={e => setFormData({...formData, category: e.target.value})}
+                          >
+                            {WORKER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Experience (Yrs)</label>
+                          <input 
+                            type="number"
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100"
+                            value={formData.experience}
+                            onChange={e => setFormData({...formData, experience: Number(e.target.value)})}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Bio / About you</label>
+                        <textarea 
+                          rows={3}
+                          className="w-full px-5 py-3 rounded-xl border border-slate-100"
+                          value={formData.bio}
+                          onChange={e => setFormData({...formData, bio: e.target.value})}
+                        />
+                      </div>
+                      
+                      <button 
+                        onClick={() => setStep(2)}
+                        className="w-full py-4 bg-brand-green text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-trust hover:bg-emerald-800 transition-all"
+                      >
+                        Next: Verification
+                      </button>
+                    </>
+                  )}
+
+                  {role === 'worker' && step === 2 && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                       <div className="p-8 bg-emerald-50 rounded-3xl border border-emerald-100 text-center">
+                          <Upload className="mx-auto text-brand-green mb-4" size={32} />
+                          <h4 className="font-bold text-brand-green mb-2">Police Clearance Certificate</h4>
+                          <p className="text-xs text-emerald-700/60 leading-relaxed">
+                            Upload a photo of your recent police clearance to get the "Verified" badge. Verified workers get 5x more hire requests.
+                          </p>
+                          
+                          <div className="mt-6 flex flex-col gap-3">
+                             {verificationFile ? (
+                               <div className="p-3 bg-white border border-emerald-200 rounded-xl flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-slate-400 truncate">clearance_doc_ready.jpg</span>
+                                  <button onClick={() => setVerificationFile(null)} className="text-red-500 font-bold text-[10px] uppercase">Remove</button>
+                               </div>
+                             ) : (
+                               <button 
+                                onClick={() => setVerificationFile('https://example.com/mock-doc.jpg')}
+                                className="w-full py-3 bg-white border-2 border-dashed border-emerald-200 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all"
+                               >
+                                  Select Photo
+                               </button>
+                             )}
+                          </div>
+                       </div>
+
+                       <div className="flex gap-4">
+                          <button 
+                            onClick={() => setStep(1)}
+                            className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-2xl font-bold text-xs uppercase tracking-widest"
+                          >
+                            Back
+                          </button>
+                          <button 
+                            onClick={handleGoogleSignIn}
+                            className="flex-[2] py-4 bg-brand-green text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-trust"
+                          >
+                            Submit & Finish
+                          </button>
+                       </div>
+                       
+                       <button onClick={handleGoogleSignIn} className="w-full text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em] hover:text-slate-400 transition-all">
+                          Skip for now
+                       </button>
+                    </div>
+                  )}
+
+                  {role === 'employer' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Status</label>
+                          <select 
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:ring-4 focus:ring-brand-green/5 bg-white"
+                            value={formData.employerStatus}
+                            onChange={e => setFormData({...formData, employerStatus: e.target.value as EmployerStatus})}
+                          >
+                            <option value="Mr">Mr.</option>
+                            <option value="Mrs">Mrs.</option>
+                            <option value="Miss">Miss.</option>
+                            <option value="Family">Family</option>
+                            <option value="Company">Company</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Location</label>
+                          <input 
+                            placeholder="e.g. Harare, Mt Pleasant"
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green transition-all"
+                            value={formData.location}
+                            onChange={e => setFormData({...formData, location: e.target.value})}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Phone</label>
+                          <input 
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100"
+                            value={formData.phone}
+                            onChange={e => setFormData({...formData, phone: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">WhatsApp</label>
+                          <input 
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100"
+                            value={formData.whatsapp}
+                            onChange={e => setFormData({...formData, whatsapp: e.target.value})}
+                          />
+                        </div>
+                      </div>
+
+                      <button 
+                        disabled={loading || !formData.firstName || !formData.surname}
+                        onClick={handleGoogleSignIn}
+                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 disabled:opacity-50 transition-all mt-6 shadow-xl"
+                      >
+                        {loading ? (
+                          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
+                            Complete with Google
+                          </>
+                        )}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,59 +1,70 @@
-export type UserRole = 'user' | 'admin' | 'moderator';
-export type PremiumTier = 'free' | 'gold' | 'platinum' | 'vip';
+export type UserRole = 'worker' | 'employer' | 'admin';
+export type AvailabilityStatus = 'Available' | 'Busy' | 'Away';
+export type EmployerStatus = 'Mr' | 'Mrs' | 'Miss' | 'Family' | 'Company';
 
-export interface UserProfile {
+export interface User {
   uid: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  whatsappNumber?: string;
-  premiumTier: PremiumTier;
-  premiumUntil?: any;
-  location: string;
-  bio: string;
-  photos: string[];
-  interests: string[];
   role: UserRole;
-  isVerified: boolean;
-  isBanned: boolean;
+  firstName: string;
+  surname: string;
+  phone?: string;
+  whatsapp?: string;
+  location: string;
+  photoURL?: string;
+  employerStatus?: EmployerStatus;
   createdAt: any;
   updatedAt: any;
-  preferences?: {
-    ageMin: number;
-    ageMax: number;
-    genderPreference: 'male' | 'female' | 'any';
-    distance: number;
-  };
 }
 
-export interface Report {
-  id: string;
-  reporterId: string;
-  reportedId: string;
-  reason: string;
-  status: 'pending' | 'resolved';
-  timestamp: any;
+export interface WorkerProfile {
+  userId: string;
+  category: string;
+  age: number;
+  gender: 'male' | 'female';
+  yearsExperience: number;
+  languages: string[];
+  skills: string[];
+  salaryExpectation: string;
+  availability: AvailabilityStatus;
+  bio: string;
+  isVerified: boolean;
+  hasPoliceClearance: boolean;
+  policeClearanceUrl?: string;
+  workPhotos: string[];
+  rating: number;
+  reviewCount: number;
 }
 
-export interface Match {
+export interface Review {
   id: string;
-  users: string[];
-  timestamp: any;
-  lastMessage?: string;
-  lastMessageAt?: any;
-  lastMessageSenderId?: string;
-  unreadCount?: { [userId: string]: number };
+  fromId: string;
+  toWorkerId: string;
+  rating: number;
+  comment: string;
+  createdAt: any;
 }
 
-export interface Message {
+export interface VerificationRequest {
   id: string;
-  senderId: string;
-  text: string;
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video' | 'audio';
-  status: 'sent' | 'delivered' | 'read';
-  reactions?: { [emoji: string]: string[] }; // emoji -> list of userIds
-  timestamp: any;
+  userId: string;
+  policeClearanceUrl: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: any;
+  reviewedBy?: string;
 }
+
+export const WORKER_CATEGORIES = [
+  'Maid',
+  'Gardener',
+  'House Helper',
+  'Nanny',
+  'Cook',
+  'Elderly Caregiver',
+  'Security Guard',
+  'Driver',
+  'Babysitter',
+  'Laundry Assistant',
+  'Farm Worker',
+  'Other'
+];

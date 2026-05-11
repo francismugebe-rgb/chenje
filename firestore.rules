@@ -12,92 +12,65 @@ service cloud.firestore {
     function isAdmin() { 
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email == "FRANCISMUGEBE@gmail.com" ||
-        request.auth.token.email == "francismugebe@gmail.com"
-      ); 
-    }
-    function getUserData(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
-    function isPremium(uid) { 
-      let data = getUserData(uid);
-      return data.premiumTier in ['gold', 'platinum', 'vip'];
+        request.auth.token.email.lower() == "francismugebe@gmail.com"
+      );
     }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
-    function isValidId(id) { return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
 
     // 4. Validation Helpers
     function isValidUser(data) {
       return data.uid is string && 
-             (data.email is string || isAdmin()) && 
-             data.firstName is string && data.firstName.size() <= 50 &&
-             data.lastName is string && data.lastName.size() <= 60 &&
-             data.age is int && data.age >= 18 &&
-             data.gender in ['male', 'female', 'other'] &&
-             data.premiumTier in ['free', 'gold', 'platinum', 'vip'] &&
-             data.role in ['user', 'admin', 'moderator'];
+             data.email is string && 
+             data.role in ['worker', 'employer', 'admin'] &&
+             data.firstName is string && data.firstName.size() <= 100 &&
+             data.surname is string && data.surname.size() <= 100;
     }
 
-    // --- Admin Collection ---
+    function isValidWorkerProfile(data) {
+      return data.userId is string &&
+             data.category is string &&
+             data.availability in ['Available', 'Busy', 'Away'];
+    }
+
+    // --- Collections ---
+
     match /admins/{uid} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // --- Users Collection ---
     match /users/{userId} {
       allow read: if true;
-      allow create: if isAdmin() || (isSignedIn() && isOwner(userId) && isValidUser(incoming()) && incoming().role == 'user' && incoming().premiumTier == 'free');
+      allow create: if isAdmin() || (isOwner(userId) && isValidUser(incoming()));
       allow update: if isAdmin() || (
-        isOwner(userId) && 
-        isValidUser(incoming()) &&
-        incoming().role == existing().role &&
-        incoming().isVerified == existing().isVerified &&
-        incoming().premiumTier == existing().premiumTier && 
-        incoming().isBanned == existing().isBanned
+        isOwner(userId) && isValidUser(incoming()) &&
+        incoming().role == existing().role
       );
       allow delete: if isAdmin();
     }
 
-    // --- Likes ---
-    match /likes/{likeId} {
-      allow read: if isSignedIn() && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
-      allow create: if isSignedIn() && incoming().from == request.auth.uid;
-      allow delete: if isSignedIn() && existing().from == request.auth.uid;
+    match /worker_profiles/{userId} {
+      allow read: if true;
+      allow create: if isAdmin() || (isOwner(userId) && isValidWorkerProfile(incoming()));
+      allow update: if isAdmin() || (
+        isOwner(userId) && isValidWorkerProfile(incoming()) &&
+        incoming().isVerified == existing().isVerified
+      );
+      allow delete: if isAdmin();
     }
 
-    // --- WhatsApp Numbers (Premium Only Access) ---
-    match /whatsappNumbers/{userId} {
-      allow read: if isSignedIn() && (isOwner(userId) || isPremium(request.auth.uid));
-      allow create, update: if isOwner(userId) && incoming().number is string && incoming().number.size() < 20;
-      allow delete: if isOwner(userId) || isAdmin();
-    }
-
-    // --- Reports ---
-    match /reports/{reportId} {
-      allow read: if isAdmin();
-      allow create: if isSignedIn() && incoming().reporterId == request.auth.uid;
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().fromId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
-    // --- Matches & Messages ---
-    match /matches/{matchId} {
-      allow read: if isSignedIn() && (request.auth.uid in existing().users || isAdmin());
-      allow create: if isSignedIn() && request.auth.uid in incoming().users;
-      allow update: if isSignedIn() && (request.auth.uid in existing().users || isAdmin());
-      allow delete: if isAdmin();
-      
-      match /messages/{messageId} {
-        allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users || isAdmin());
-        allow create: if isSignedIn() && 
-                      request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users &&
-                      incoming().senderId == request.auth.uid &&
-                      incoming().text.size() < 1000 &&
-                      (
-                        isPremium(request.auth.uid) || 
-                        get(/databases/$(database)/documents/matches/$(matchId)).data.messageCount[request.auth.uid] < 2
-                      );
-        allow update, delete: if isAdmin();
-      }
+    match /verifications/{verifyId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isAdmin();
     }
   }
 }

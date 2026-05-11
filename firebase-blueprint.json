@@ -2,111 +2,87 @@
   "entities": {
     "User": {
       "title": "User Profile",
-      "description": "Core user data for the dating platform.",
+      "description": "Base user data for HomeHelp Connect.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["worker", "employer", "admin"] },
+        "surname": { "type": "string" },
         "firstName": { "type": "string" },
-        "lastName": { "type": "string" },
-        "whatsappNumber": { "type": "string" },
-        "premiumTier": { "type": "string", "enum": ["free", "gold", "platinum", "vip"] },
-        "premiumUntil": { "type": "string", "format": "date-time" },
-        "age": { "type": "integer" },
-        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
         "location": { "type": "string" },
-        "bio": { "type": "string" },
-        "photos": { "type": "array", "items": { "type": "string" } },
-        "interests": { "type": "array", "items": { "type": "string" } },
-        "preferences": {
-          "type": "object",
-          "properties": {
-            "ageMin": { "type": "integer" },
-            "ageMax": { "type": "integer" },
-            "genderPreference": { "type": "string", "enum": ["male", "female", "any"] }
-          }
-        },
-        "role": { "type": "string", "enum": ["user", "admin", "moderator"] },
-        "isVerified": { "type": "boolean" },
-        "isBanned": { "type": "boolean" },
+        "photoURL": { "type": "string" },
+        "employerStatus": { "type": "string", "enum": ["Mr", "Mrs", "Miss", "Family", "Company"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "firstName", "lastName", "age", "gender", "role", "premiumTier"]
+      "required": ["uid", "email", "role", "firstName", "surname"]
     },
-    "Report": {
-      "title": "User Report",
-      "description": "Reports filed against users for safety moderation.",
+    "WorkerProfile": {
+      "title": "Worker Profile",
+      "description": "Detailed professional data for domestic workers.",
       "type": "object",
       "properties": {
-        "reporterId": { "type": "string" },
-        "reportedId": { "type": "string" },
-        "reason": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "resolved"] },
-        "timestamp": { "type": "string", "format": "date-time" }
-      }
+        "userId": { "type": "string" },
+        "category": { "type": "string" },
+        "age": { "type": "integer" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
+        "yearsExperience": { "type": "integer" },
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "salaryExpectation": { "type": "string" },
+        "availability": { "type": "string", "enum": ["Available", "Busy", "Away"] },
+        "bio": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "hasPoliceClearance": { "type": "boolean" },
+        "policeClearanceUrl": { "type": "string" },
+        "workPhotos": { "type": "array", "items": { "type": "string" } },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "integer" }
+      },
+      "required": ["userId", "category", "yearsExperience", "availability"]
     },
-    "Message": {
-      "title": "Message",
-      "description": "Individual chat message.",
+    "Review": {
+      "title": "Review",
+      "description": "Ratings and feedback for workers.",
       "type": "object",
       "properties": {
-        "senderId": { "type": "string" },
-        "text": { "type": "string" },
-        "mediaUrl": { "type": "string" },
-        "mediaType": { "type": "string", "enum": ["image", "video", "audio"] },
-        "status": { "type": "string", "enum": ["sent", "delivered", "read"] },
-        "timestamp": { "type": "string", "format": "date-time" }
-      }
+        "fromId": { "type": "string" },
+        "toWorkerId": { "type": "string" },
+        "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromId", "toWorkerId", "rating"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "Primary user profiles."
+      "description": "Core account data for all users."
     },
-    "/likes/{likeId}": {
+    "/worker_profiles/{userId}": {
+      "schema": "WorkerProfile",
+      "description": "Professional profiles for registered workers."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Worker ratings and reviews."
+    },
+    "/verifications/{verifyId}": {
       "schema": {
         "type": "object",
         "properties": {
-          "from": { "type": "string" },
-          "to": { "type": "string" },
-          "timestamp": { "type": "string", "format": "date-time" }
+          "userId": { "type": "string" },
+          "policeClearanceUrl": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+          "submittedAt": { "type": "string", "format": "date-time" },
+          "reviewedBy": { "type": "string" }
         }
       },
-      "description": "Tracks user likes for match generation."
-    },
-    "/whatsappNumbers/{userId}": {
-      "schema": {
-        "type": "object",
-        "properties": {
-          "number": { "type": "string" }
-        }
-      },
-      "description": "Secure storage for WhatsApp numbers, accessible only to premium users."
-    },
-    "/reports/{reportId}": {
-      "schema": "Report",
-      "description": "Safety reports."
-    },
-    "/matches/{matchId}": {
-      "schema": {
-        "type": "object",
-        "properties": {
-          "users": { "type": "array", "items": { "type": "string" } },
-          "timestamp": { "type": "string", "format": "date-time" },
-          "lastMessage": { "type": "string" },
-          "lastMessageAt": { "type": "string", "format": "date-time" },
-          "lastMessageSenderId": { "type": "string" },
-          "unreadCount": { "type": "object" },
-          "messageCount": { "type": "object" }
-        }
-      },
-      "description": "User matches."
-    },
-    "/matches/{matchId}/messages/{messageId}": {
-      "schema": "Message",
-      "description": "Chat transcript."
+      "description": "Admin queue for police clearance verification."
     }
   }
 }
