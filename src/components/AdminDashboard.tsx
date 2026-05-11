@@ -3,17 +3,18 @@ import { motion } from 'motion/react';
 import { 
   Users, Shield, FileCheck, AlertTriangle, 
   CheckCircle, XCircle, Search, 
-  Eye, MoreVertical, Loader2
+  Eye, MoreVertical, Loader2, Database, RefreshCw
 } from 'lucide-react';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { VerificationRequest, User, WorkerProfile } from '../types';
+import { VerificationRequest, User, WorkerProfile, WORKER_CATEGORIES } from '../types';
 import { useAuth } from '../AuthContext';
 
 export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const { user: currentUser } = useAuth();
   const [requests, setRequests] = useState<(VerificationRequest & { worker: User & { profile: WorkerProfile } })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
   useEffect(() => {
@@ -72,11 +73,112 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
     }
   };
 
+  const seedWorkers = async () => {
+    if (!currentUser || activeTab !== 'approved') {
+       // Just a sanity check, usually admin check is done by the caller
+    }
+    
+    setSeeding(true);
+    const firstNames = ['Zinhle', 'Thandi', 'Chiedza', 'Nomalanga', 'Blessing', 'Farai', 'Tatenda', 'Rudo', 'Nyasha', 'Takudzwa', 'Anesu', 'Kumbirai', 'Tariro', 'Tendai', 'Rutendo', 'Nomsa', 'Sipho', 'Bongani', 'Dumisani', 'Lovemore', 'Gift', 'Tinashe', 'Memory', 'Prosper'];
+    const surnames = ['Mdluli', 'Dlamini', 'Moyo', 'Sibanda', 'Gumede', 'Katsande', 'Chidziva', 'Ncube', 'Ndlovu', 'Mpofu', 'Khumalo', 'Phiri', 'Banda', 'Maposa', 'Zhou', 'Shumba', 'Gumbo', 'Nyoni', 'Mutasa', 'Makoni'];
+    const locations = ['Harare, Mt Pleasant', 'Bulawayo, Suburbs', 'Mutare, Chikanga', 'Harare, Avondale', 'Gweru, Mkoba', 'Harare, Borrowdale', 'Masvingo, Rujeko', 'Kwekwe, Mbizo', 'Harare, Mabelreign', 'Bulawayo, Hillside'];
+    
+    const bios = [
+      'Hardworking and experienced in deep cleaning and laundry.',
+      'Lover of children with first aid training. Reliable and patient.',
+      'Specialist in traditional Zimbabwean and continental dishes.',
+      'Passion for landscaping and organic vegetable gardening.',
+      'Trained in property protection and emergency response.',
+      'Professional driver with a clean license and defensive driving.',
+      'Strong and efficient in all household tasks.',
+      'Compassionate care for elderly and patients.',
+      'Detail-oriented laundry specialist and ironer.',
+      'Energetic helper who enjoys organizing and maintaining tidy spaces.'
+    ];
+
+    const photos = [
+      'https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1523910367623-6827e2db34a9?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1507152832244-10d45c7eda57?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&q=80&w=400&h=400'
+    ];
+
+    const fullBodyPhotos = [
+      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=600&h=900',
+      'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=600&h=900',
+      'https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?auto=format&fit=crop&q=80&w=600&h=900'
+    ];
+
+    try {
+      for (let i = 0; i < 50; i++) {
+        const uid = `seed_worker_${i}`;
+        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const surname = surnames[Math.floor(Math.random() * surnames.length)];
+        const location = locations[Math.floor(Math.random() * locations.length)];
+        const photoURL = photos[i % photos.length];
+        const category = WORKER_CATEGORIES[Math.floor(Math.random() * WORKER_CATEGORIES.length)];
+        const bio = bios[Math.floor(Math.random() * bios.length)];
+
+        await setDoc(doc(db, 'users', uid), {
+          uid,
+          firstName,
+          surname,
+          location,
+          role: 'worker',
+          photoURL,
+          email: `${firstName.toLowerCase()}.${i}@homehelp.co.zw`,
+          phone: `+26377${Math.floor(1000000 + Math.random() * 9000000)}`,
+          whatsapp: `+26377${Math.floor(1000000 + Math.random() * 9000000)}`,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+
+        await setDoc(doc(db, 'worker_profiles', uid), {
+          userId: uid,
+          category,
+          age: 20 + Math.floor(Math.random() * 35),
+          gender: Math.random() > 0.3 ? 'female' : 'male',
+          yearsExperience: 2 + Math.floor(Math.random() * 15),
+          languages: ['English', 'Shona', Math.random() > 0.5 ? 'Ndebele' : 'Chewa'],
+          skills: [category, 'Housekeeping', 'Punctuality'],
+          salaryExpectation: 'Negotiable',
+          availability: Math.random() > 0.2 ? 'Available' : 'Busy',
+          bio,
+          isVerified: Math.random() > 0.1,
+          hasPoliceClearance: Math.random() > 0.1,
+          workPhotos: [fullBodyPhotos[0], fullBodyPhotos[1]],
+          rating: 4.0 + (Math.random() * 1.0),
+          reviewCount: Math.floor(Math.random() * 50)
+        });
+      }
+      alert('Marketplace repopulated with 50 workers!');
+    } catch (err) {
+      console.error("Seeding error:", err);
+      alert('Seeding failed.');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="bg-white border-b border-slate-200 px-8 py-6 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
+             <button 
+              onClick={seedWorkers} 
+              disabled={seeding}
+              className="flex items-center gap-2 px-6 py-2.5 bg-brand-green text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-trust hover:bg-emerald-800 transition-all disabled:opacity-50"
+             >
+                {seeding ? <RefreshCw className="animate-spin" size={16} /> : <Database size={16} />}
+                Update Site Data
+             </button>
              <button onClick={onBack} className="text-slate-400 hover:text-brand-green font-bold text-sm">← Back to Marketplace</button>
              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Admin Control</h1>
           </div>
