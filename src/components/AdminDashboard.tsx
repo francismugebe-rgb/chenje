@@ -271,7 +271,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
       </header>
 
       <main className="max-w-7xl mx-auto w-full px-8 py-10 flex-1">
-        <div className="grid md:grid-cols-4 gap-6 mb-10">
+        <div className="grid md:grid-cols-4 gap-4 mb-8">
            <StatCard icon={Users} label="Total Workers" value="280" trend="+12% this week" color="emerald" />
            <StatCard icon={Shield} label="Verification Queue" value={requests.length.toString()} trend="Action needed" color="gold" />
            <StatCard icon={AlertTriangle} label="Reported Profiles" value="1" color="red" />
@@ -568,16 +568,16 @@ const StatCard = ({ icon: Icon, label, value, trend, color }: any) => {
   };
 
   return (
-    <div className={`bg-white p-8 rounded-[32px] shadow-sm border border-slate-100 transition-all hover:scale-[1.02] ${shadowColors[color]}`}>
-       <div className={`w-14 h-14 rounded-2xl ${colors[color]} border flex items-center justify-center mb-6`}>
-          <Icon size={28} />
+    <div className={`bg-white p-6 rounded-[28px] shadow-sm border border-slate-100 transition-all hover:scale-[1.01] ${shadowColors[color]}`}>
+       <div className={`w-12 h-12 rounded-xl ${colors[color]} border flex items-center justify-center mb-5`}>
+          <Icon size={24} />
        </div>
-       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-2">{label}</p>
-       <h4 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{value}</h4>
+       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 mb-1">{label}</p>
+       <h4 className="text-3xl font-black text-slate-900 tracking-tighter leading-none">{value}</h4>
        {trend && (
-         <div className="flex items-center gap-1.5 mt-4">
-            <span className={`w-1.5 h-1.5 rounded-full ${color === 'red' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-            <p className={`text-[10px] font-black uppercase tracking-widest ${color === 'red' ? 'text-rose-500' : 'text-emerald-500'}`}>{trend}</p>
+         <div className="flex items-center gap-1.5 mt-3">
+            <span className={`w-1 h-1 rounded-full ${color === 'red' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+            <p className={`text-[8px] font-black uppercase tracking-widest ${color === 'red' ? 'text-rose-500' : 'text-emerald-500'}`}>{trend}</p>
          </div>
        )}
     </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserPlus, Briefcase, ChevronRight, Phone, MessageSquare, MapPin, Upload, Star, CheckCircle2 } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserRole, WORKER_CATEGORIES, AvailabilityStatus, EmployerStatus } from '../types';
 
@@ -10,6 +10,9 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
   const [role, setRole] = useState<UserRole | null>(null);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [verificationFile, setVerificationFile] = useState<string | null>(null);
   
   // Form State
@@ -28,59 +31,88 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
     employerStatus: 'Mr' as EmployerStatus
   });
 
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      let result;
+      try {
+        result = await signInWithEmailAndPassword(auth, email, password);
+      } catch (err: any) {
+        if (err.code === 'auth/user-not-found') {
+          result = await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+          throw err;
+        }
+      }
+      
+      if (result.user) {
+        await saveProfile(result.user.uid, result.user.email || email, result.user.photoURL);
+        onComplete();
+      }
+    } catch (err: any) {
+      console.error("Email auth error:", err);
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveProfile = async (uid: string, userEmail: string, photoURL: string | null) => {
+    // Basic profile creation
+    await setDoc(doc(db, 'users', uid), {
+      uid,
+      email: userEmail,
+      role: role || 'employer',
+      firstName: formData.firstName || userEmail.split('@')[0] || '',
+      surname: formData.surname || '',
+      phone: formData.phone,
+      whatsapp: formData.whatsapp,
+      location: formData.location,
+      photoURL: photoURL || `https://ui-avatars.com/api/?name=${formData.firstName || userEmail.split('@')[0]}&background=random`,
+      employerStatus: role === 'employer' ? formData.employerStatus : null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    if (role === 'worker') {
+      await setDoc(doc(db, 'worker_profiles', uid), {
+        userId: uid,
+        category: formData.category,
+        age: Number(formData.age),
+        gender: formData.gender,
+        yearsExperience: Number(formData.experience),
+        languages: ['English', 'Shona'],
+        skills: [],
+        salaryExpectation: 'Negotiable',
+        availability: 'Available' as AvailabilityStatus,
+        bio: formData.bio,
+        isVerified: false,
+        hasPoliceClearance: false,
+        workPhotos: [],
+        rating: 0,
+        reviewCount: 0
+      });
+
+      if (verificationFile) {
+        const { addDoc, collection } = await import('firebase/firestore');
+        await addDoc(collection(db, 'verifications'), {
+          userId: uid,
+          status: 'pending',
+          policeClearanceUrl: verificationFile,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
-      // Basic profile creation
-      await setDoc(doc(db, 'users', result.user.uid), {
-        uid: result.user.uid,
-        email: result.user.email,
-        role: role || 'employer',
-        firstName: formData.firstName || result.user.displayName?.split(' ')[0] || '',
-        surname: formData.surname || result.user.displayName?.split(' ').slice(1).join(' ') || '',
-        phone: formData.phone,
-        whatsapp: formData.whatsapp,
-        location: formData.location,
-        photoURL: result.user.photoURL,
-        employerStatus: role === 'employer' ? formData.employerStatus : null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      if (role === 'worker') {
-        await setDoc(doc(db, 'worker_profiles', result.user.uid), {
-          userId: result.user.uid,
-          category: formData.category,
-          age: Number(formData.age),
-          gender: formData.gender,
-          yearsExperience: Number(formData.experience),
-          languages: ['English', 'Shona'],
-          skills: [],
-          salaryExpectation: 'Negotiable',
-          availability: 'Available' as AvailabilityStatus,
-          bio: formData.bio,
-          isVerified: false,
-          hasPoliceClearance: false,
-          workPhotos: [],
-          rating: 0,
-          reviewCount: 0
-        });
-
-        if (verificationFile) {
-          const { addDoc, collection } = await import('firebase/firestore');
-          await addDoc(collection(db, 'verifications'), {
-            userId: result.user.uid,
-            status: 'pending',
-            policeClearanceUrl: verificationFile,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-        }
-      }
-
+      await saveProfile(result.user.uid, result.user.email!, result.user.photoURL);
       onComplete();
     } catch (err) {
       console.error("Sign in error:", err);
@@ -343,20 +375,67 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
                         </div>
                       </div>
 
+                  <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl mb-6">
+                    <button 
+                      onClick={() => setAuthMode('google')}
+                      className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${authMode === 'google' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}
+                    >
+                      Google
+                    </button>
+                    <button 
+                      onClick={() => setAuthMode('email')}
+                      className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${authMode === 'email' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}
+                    >
+                      Email Login
+                    </button>
+                  </div>
+
+                  {authMode === 'email' ? (
+                    <form onSubmit={handleEmailAuth} className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Email Address</label>
+                        <input 
+                          type="email"
+                          required
+                          className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Password</label>
+                        <input 
+                          type="password"
+                          required
+                          className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                        />
+                      </div>
                       <button 
-                        disabled={loading || !formData.firstName || !formData.surname}
-                        onClick={handleGoogleSignIn}
-                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 disabled:opacity-50 transition-all mt-6 shadow-xl"
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all"
                       >
-                        {loading ? (
-                          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                        ) : (
-                          <>
-                            <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
-                            Complete with Google
-                          </>
-                        )}
+                        {loading ? 'Processing...' : 'Continue with Email'}
                       </button>
+                    </form>
+                  ) : (
+                    <button 
+                      disabled={loading || !formData.firstName || !formData.surname}
+                      onClick={handleGoogleSignIn}
+                      className="w-full py-4 bg-white border border-slate-200 text-slate-800 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-50 disabled:opacity-50 transition-all mb-6 shadow-sm"
+                    >
+                      {loading ? (
+                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full" />
+                      ) : (
+                        <>
+                          <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
+                          Continue with Google
+                        </>
+                      )}
+                    </button>
+                  )}
                     </>
                   )}
                 </div>

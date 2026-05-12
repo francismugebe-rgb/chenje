@@ -46,35 +46,35 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
         </div>
       </div>
 
-      <div className="p-7">
+      <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-2xl font-black text-slate-900 tracking-tighter leading-none mb-2">{worker.firstName}<br />{worker.surname}</h3>
+            <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-tight mb-1">{worker.firstName}<br />{worker.surname}</h3>
             <div className="flex items-center gap-1.5 text-slate-500">
-              <MapPin size={14} className="text-brand-green" />
-              <span className="text-[11px] font-bold uppercase tracking-widest">{worker.location || 'Zimbabwe'}</span>
+              <MapPin size={12} className="text-brand-green" />
+              <span className="text-[9px] font-black uppercase tracking-widest leading-none">{worker.location || 'Zimbabwe'}</span>
             </div>
           </div>
           <div className="text-right">
-            <span className="block text-brand-green font-black text-xs uppercase tracking-[0.15em] mb-1">Negotiable</span>
-            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-md">Fixed by Employer</span>
+            <span className="block text-brand-green font-black text-[9px] uppercase tracking-[0.15em] mb-0.5">Negotiable</span>
+            <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded-md">Expected</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mt-6 pt-6 border-t border-slate-50">
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-50">
           <div className="text-center flex-1">
-             <span className="block text-sm font-bold text-slate-800">{profile.yearsExperience}+ Yrs</span>
-             <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Experience</span>
+             <span className="block text-xs font-black text-slate-800 tracking-tighter">{profile.yearsExperience}+ Yrs</span>
+             <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em]">Exp</span>
           </div>
-          <div className="w-px h-8 bg-slate-100" />
+          <div className="w-px h-6 bg-slate-100" />
           <div className="text-center flex-1">
-             <span className="block text-sm font-bold text-slate-800">{profile.rating}</span>
-             <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Rating</span>
+             <span className="block text-xs font-black text-slate-800 tracking-tighter">{profile.rating}</span>
+             <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em]">Rate</span>
           </div>
-          <div className="w-px h-8 bg-slate-100" />
+          <div className="w-px h-6 bg-slate-100" />
           <div className="text-center flex-1">
-              <div className={`w-2 h-2 rounded-full mx-auto mb-1 ${profile.availability === 'Available' ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`} />
-             <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{profile.availability}</span>
+               <div className={`w-1.5 h-1.5 rounded-full mx-auto mb-0.5 ${profile.availability === 'Available' ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`} />
+             <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em]">{profile.availability}</span>
           </div>
         </div>
       </div>
@@ -407,17 +407,17 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
                   <div className="flex items-end justify-between">
                     <div>
                       {selectedWorker.profile.isVerified && (
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-green text-white rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
-                          <ShieldCheck size={14} /> Verified Professional
+                        <div className="inline-flex items-center gap-2 px-2 py-0.5 bg-brand-green text-white rounded-full text-[8px] font-black uppercase tracking-widest mb-3">
+                          <ShieldCheck size={12} /> Verified Professional
                         </div>
                       )}
-                      <h2 className="text-5xl font-black tracking-tighter text-slate-900">{selectedWorker.user.firstName} {selectedWorker.user.surname}</h2>
+                      <h2 className="text-4xl font-black tracking-tighter text-slate-900 leading-none">{selectedWorker.user.firstName} {selectedWorker.user.surname}</h2>
                       <div className="flex items-center gap-4 mt-2">
-                        <div className="flex items-center gap-2 text-brand-earth font-bold">
-                           <MapPin size={16} /> <span>{selectedWorker.user.location}</span>
+                        <div className="flex items-center gap-1.5 text-brand-earth font-black text-[10px] uppercase tracking-widest">
+                           <MapPin size={14} /> <span>{selectedWorker.user.location}</span>
                         </div>
-                        <div className="w-1.5 h-1.5 bg-slate-200 rounded-full" />
-                        <div className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{selectedWorker.profile.category}</div>
+                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
+                        <div className="text-slate-400 font-black uppercase tracking-widest text-[9px] italic">{selectedWorker.profile.category}</div>
                       </div>
                     </div>
                     
