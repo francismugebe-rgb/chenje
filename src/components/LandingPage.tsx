@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Shield, Phone, MessageSquare, Star, ArrowRight, UserPlus, FileCheck, CheckCircle2, Loader2 } from 'lucide-react';
+import { Search, Shield, Phone, MessageSquare, Star, ArrowRight, UserPlus, FileCheck, CheckCircle2, Loader2, ShieldCheck, MessageCircle, Heart } from 'lucide-react';
 import { WORKER_CATEGORIES, User, WorkerProfile } from '../types';
 import { collection, query, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -182,6 +182,33 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Value Proposition */}
+      <section className="py-20 px-6">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
+          <div className="group p-8 bg-white rounded-[40px] border border-slate-100 shadow-soft hover:shadow-trust transition-all">
+            <div className="w-14 h-14 bg-brand-green/10 rounded-2xl flex items-center justify-center text-brand-green mb-6 group-hover:scale-110 transition-transform">
+              <ShieldCheck size={32} />
+            </div>
+            <h3 className="text-xl font-black mb-3 tracking-tight uppercase">Vetted Security</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Every professional undergoes a strict police clearance check and identity verification for your safety.</p>
+          </div>
+          <div className="group p-8 bg-white rounded-[40px] border border-slate-100 shadow-soft hover:shadow-trust transition-all">
+            <div className="w-14 h-14 bg-brand-gold/10 rounded-2xl flex items-center justify-center text-brand-gold mb-6 group-hover:scale-110 transition-transform">
+              <Star size={32} />
+            </div>
+            <h3 className="text-xl font-black mb-3 tracking-tight uppercase">Top Ratings</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Our rating system ensures you only see the most reliable and efficient domestic help in Zimbabwe.</p>
+          </div>
+          <div className="group p-8 bg-white rounded-[40px] border border-slate-100 shadow-soft hover:shadow-trust transition-all">
+            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
+              <MessageCircle size={32} />
+            </div>
+            <h3 className="text-xl font-black mb-3 tracking-tight uppercase">Direct Hiring</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Hire directly via WhatsApp. No middle-man fees, no complex contracts. Just direct connection.</p>
+          </div>
         </div>
       </section>
 

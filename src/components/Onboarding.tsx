@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserPlus, Briefcase, ChevronRight, Phone, MessageSquare, MapPin, Upload, Star, CheckCircle2 } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
-import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserRole, WORKER_CATEGORIES, AvailabilityStatus, EmployerStatus } from '../types';
 
@@ -15,6 +15,8 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(initialLogin);
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,22 +43,62 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
     setLoading(true);
     try {
       let result;
+      let isNewUser = false;
       try {
         result = await signInWithEmailAndPassword(auth, email, password);
+        
+        // If logging in, check for verification
+        if (!result.user.emailVerified) {
+          await sendEmailVerification(result.user);
+          setIsVerificationSent(true);
+          setLoading(false);
+          return;
+        }
       } catch (err: any) {
-        if (err.code === 'auth/user-not-found') {
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+          // If role is null, we are just trying to login. If it failed, don't auto-create.
+          if (!role) throw new Error("User not found. Please check your credentials or create an account.");
+          
           result = await createUserWithEmailAndPassword(auth, email, password);
+          isNewUser = true;
+          
+          // Send verification for new users
+          await sendEmailVerification(result.user);
+          setIsVerificationSent(true);
         } else {
           throw err;
         }
       }
       
       if (result.user) {
-        await saveProfile(result.user.uid, result.user.email || email, result.user.photoURL);
-        onComplete();
+        if (isNewUser) {
+          await saveProfile(result.user.uid, result.user.email || email, result.user.photoURL);
+        }
+        
+        if (result.user.emailVerified) {
+          onComplete();
+        }
       }
     } catch (err: any) {
       console.error("Email auth error:", err);
+      alert(err.message);
+    } finally {
+      if (!isVerificationSent) setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      alert("Please enter your email address first.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email sent! Please check your inbox.");
+      setIsForgotPassword(false);
+    } catch (err: any) {
       alert(err.message);
     } finally {
       setLoading(false);
@@ -216,6 +258,63 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                   By joining, you agree to our Terms of Use and Privacy Policy.
                 </p>
               </motion.div>
+            ) : isVerificationSent ? (
+                <motion.div 
+                    key="verification-view"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center"
+                >
+                    <div className="w-20 h-20 bg-brand-green/10 text-brand-green rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <MessageSquare size={40} />
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tighter">Check your email</h2>
+                    <p className="text-slate-500 mb-8 leading-relaxed">
+                        We've sent a verification link to <span className="font-bold text-slate-900">{email}</span>. Please verify your email to complete registration.
+                    </p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-brand-green transition-all"
+                    >
+                        I've Verified My Email
+                    </button>
+                    <button 
+                        onClick={() => setIsVerificationSent(false)}
+                        className="mt-6 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all"
+                    >
+                        Try a different email
+                    </button>
+                </motion.div>
+            ) : isForgotPassword ? (
+                <motion.div 
+                    key="forgot-password-view"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                >
+                    <button onClick={() => setIsForgotPassword(false)} className="text-xs font-bold text-brand-green uppercase tracking-widest mb-6 block">← Back to login</button>
+                    <h2 className="text-2xl font-black text-slate-800 mb-2">Reset Password</h2>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">Enter your email to receive a reset link</p>
+                    
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Email Address</label>
+                            <input 
+                                type="email"
+                                required
+                                className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <button 
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-brand-green transition-all"
+                        >
+                            {loading ? 'Sending...' : 'Send Reset Link'}
+                        </button>
+                    </form>
+                </motion.div>
             ) : isLoggingIn ? (
                 <motion.div 
                     key="login-view"
@@ -277,6 +376,13 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                             className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all"
                         >
                             {loading ? 'Processing...' : 'Login'}
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setIsForgotPassword(true)}
+                            className="w-full mt-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all"
+                        >
+                            Forgot Password?
                         </button>
                         </form>
                     ) : (
