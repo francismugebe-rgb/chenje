@@ -361,7 +361,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                         <div>
                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 block">Site Name</label>
                             <input 
-                                value={editSiteData.siteName}
+                                value={editSiteData.siteName || ''}
                                 onChange={e => setEditSiteData({...editSiteData, siteName: e.target.value})}
                                 className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green focus:bg-white transition-all"
                                 placeholder="e.g. ZIMBABWE MAIDS CENTRE"
@@ -373,7 +373,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                             <div className="relative">
                                 <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                 <input 
-                                    value={editSiteData.siteLogo}
+                                    value={editSiteData.siteLogo || ''}
                                     onChange={e => setEditSiteData({...editSiteData, siteLogo: e.target.value})}
                                     className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green focus:bg-white transition-all"
                                     placeholder="https://example.com/logo.png"
@@ -591,13 +591,13 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                                 <div className="grid grid-cols-2 gap-2">
                                     <input 
                                         placeholder="First Name" 
-                                        value={editUserData.firstName}
+                                        value={editUserData.firstName || ''}
                                         onChange={e => setEditUserData({...editUserData, firstName: e.target.value})}
                                         className="w-full text-xs font-bold p-2 rounded-lg border border-slate-200" 
                                     />
                                     <input 
                                         placeholder="Surname" 
-                                        value={editUserData.surname}
+                                        value={editUserData.surname || ''}
                                         onChange={e => setEditUserData({...editUserData, surname: e.target.value})}
                                         className="w-full text-xs font-bold p-2 rounded-lg border border-slate-200" 
                                     />
@@ -607,7 +607,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Profile URL</label>
                                 <input 
                                     placeholder="Photo URL (e.g. https://...)" 
-                                    value={editUserData.photoURL}
+                                    value={editUserData.photoURL || ''}
                                     onChange={e => setEditUserData({...editUserData, photoURL: e.target.value})}
                                     className="w-full text-[10px] p-2 rounded-lg border border-slate-200 focus:border-brand-green outline-none" 
                                 />
@@ -669,7 +669,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                      <div>
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Bio</label>
                         <textarea 
-                          value={editData.bio}
+                          value={editData.bio || ''}
                           onChange={(e) => setEditData({...editData, bio: e.target.value})}
                           className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm h-32"
                         />

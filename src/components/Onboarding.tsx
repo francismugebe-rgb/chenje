@@ -155,14 +155,20 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
   };
 
   const handleGoogleSignIn = async () => {
+    if (loading) return;
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      await saveProfile(result.user.uid, result.user.email!, result.user.photoURL);
+      await saveProfile(result.user.uid, result.user.email || '', result.user.photoURL);
       onComplete();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sign in error:", err);
+      if (err.code === 'auth/popup-blocked') {
+        alert("Sign-in popup was blocked. Please allow popups for this site.");
+      } else if (err.code !== 'auth/cancelled-popup-request') {
+        alert(err.message || "Failed to sign in with Google.");
+      }
     } finally {
       setLoading(false);
     }
@@ -302,7 +308,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                                 type="email"
                                 required
                                 className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
-                                value={email}
+                                value={email || ''}
                                 onChange={e => setEmail(e.target.value)}
                             />
                         </div>
@@ -421,7 +427,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                       <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">First Name</label>
                       <input 
                         className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green focus:ring-4 focus:ring-brand-green/5 transition-all"
-                        value={formData.firstName}
+                        value={formData.firstName || ''}
                         onChange={e => setFormData({...formData, firstName: e.target.value})}
                       />
                     </div>
@@ -429,7 +435,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                       <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Surname</label>
                       <input 
                         className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green focus:ring-4 focus:ring-brand-green/5 transition-all"
-                        value={formData.surname}
+                        value={formData.surname || ''}
                         onChange={e => setFormData({...formData, surname: e.target.value})}
                       />
                     </div>
@@ -463,7 +469,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                         <textarea 
                           rows={3}
                           className="w-full px-5 py-3 rounded-xl border border-slate-100"
-                          value={formData.bio}
+                          value={formData.bio || ''}
                           onChange={e => setFormData({...formData, bio: e.target.value})}
                         />
                       </div>
@@ -546,7 +552,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                           <input 
                             placeholder="e.g. Harare, Mt Pleasant"
                             className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green transition-all"
-                            value={formData.location}
+                            value={formData.location || ''}
                             onChange={e => setFormData({...formData, location: e.target.value})}
                           />
                         </div>
@@ -557,7 +563,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                           <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Phone</label>
                           <input 
                             className="w-full px-5 py-3 rounded-xl border border-slate-100"
-                            value={formData.phone}
+                            value={formData.phone || ''}
                             onChange={e => setFormData({...formData, phone: e.target.value})}
                           />
                         </div>
@@ -565,7 +571,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                           <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">WhatsApp</label>
                           <input 
                             className="w-full px-5 py-3 rounded-xl border border-slate-100"
-                            value={formData.whatsapp}
+                            value={formData.whatsapp || ''}
                             onChange={e => setFormData({...formData, whatsapp: e.target.value})}
                           />
                         </div>
@@ -594,7 +600,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                           type="email"
                           required
                           className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
-                          value={email}
+                          value={email || ''}
                           onChange={e => setEmail(e.target.value)}
                         />
                       </div>
@@ -604,7 +610,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                           type="password"
                           required
                           className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
-                          value={password}
+                          value={password || ''}
                           onChange={e => setPassword(e.target.value)}
                         />
                       </div>
