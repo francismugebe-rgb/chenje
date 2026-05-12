@@ -10,6 +10,7 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
   const [role, setRole] = useState<UserRole | null>(null);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -149,7 +150,7 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
 
         <div className="p-8 md:p-12">
           <AnimatePresence mode="wait">
-            {!role ? (
+            {!role && !isLoggingIn ? (
               <motion.div 
                 key="role-select"
                 initial={{ opacity: 0, y: 10 }}
@@ -188,17 +189,22 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
                     <ChevronRight className="ml-auto text-slate-300 group-hover:translate-x-1 transition-transform" />
                   </button>
 
+                  <div className="h-px bg-slate-100 my-2" />
+
                   <button 
-                    onClick={handleGoogleSignIn}
-                    className="group flex items-center gap-6 p-4 rounded-3xl border-2 border-dashed border-slate-100 hover:border-slate-900 hover:bg-slate-50 transition-all text-left mt-2"
+                    onClick={() => setIsLoggingIn(true)}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-brand-green transition-all"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all">
-                      <Star size={24} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-800">Admin Staff</h4>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Management Portal</p>
-                    </div>
+                    Login to My Account
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                        handleGoogleSignIn();
+                    }}
+                    className="w-full py-4 border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
+                  >
+                    <Star size={16} /> Admin Portal Login
                   </button>
                 </div>
                 
@@ -206,6 +212,78 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
                   By joining, you agree to our Terms of Use and Privacy Policy.
                 </p>
               </motion.div>
+            ) : isLoggingIn ? (
+                <motion.div 
+                    key="login-view"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                >
+                    <button onClick={() => setIsLoggingIn(false)} className="text-xs font-bold text-brand-green uppercase tracking-widest mb-6 block">← Back to selection</button>
+                    <h2 className="text-2xl font-black text-slate-800 mb-2">Welcome Back</h2>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">Sign in to your account</p>
+
+                    <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl mb-6">
+                        <button 
+                        onClick={() => setAuthMode('google')}
+                        className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${authMode === 'google' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}
+                        >
+                        Google
+                        </button>
+                        <button 
+                        onClick={() => setAuthMode('email')}
+                        className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${authMode === 'email' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}
+                        >
+                        Email Login
+                        </button>
+                    </div>
+
+                    {authMode === 'email' ? (
+                        <form onSubmit={handleEmailAuth} className="space-y-4 mb-6">
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Email Address</label>
+                            <input 
+                            type="email"
+                            required
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Password</label>
+                            <input 
+                            type="password"
+                            required
+                            className="w-full px-5 py-3 rounded-xl border border-slate-100 focus:border-brand-green text-sm"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            />
+                        </div>
+                        <button 
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all"
+                        >
+                            {loading ? 'Processing...' : 'Login'}
+                        </button>
+                        </form>
+                    ) : (
+                        <button 
+                        disabled={loading}
+                        onClick={handleGoogleSignIn}
+                        className="w-full py-4 bg-white border border-slate-200 text-slate-800 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-50 disabled:opacity-50 transition-all mb-6 shadow-sm"
+                        >
+                        {loading ? (
+                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full" />
+                        ) : (
+                            <>
+                            <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
+                            Login with Google
+                            </>
+                        )}
+                        </button>
+                    )}
+                </motion.div>
             ) : (
               <motion.div 
                 key="form-steps"

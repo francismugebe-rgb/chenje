@@ -70,13 +70,14 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
             <span className="font-black text-lg tracking-tighter text-slate-900">ZIMBABWE <span className="text-brand-green">MAIDS CENTRE</span></span>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <button onClick={onBrowse} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Browse Workers</button>
-            <button onClick={onGetStarted} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Register</button>
+            <button onClick={onBrowse} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Maid</button>
+            <button onClick={onGetStarted} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Job</button>
+            <div className="w-px h-4 bg-slate-100" />
             <button 
-              onClick={onAdminPortal}
-              className="px-5 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-brand-green transition-all shadow-lg"
+              onClick={onGetStarted}
+              className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-brand-green transition-all shadow-lg"
             >
-              Admin Portal
+              Sign In / Sign Up
             </button>
           </div>
           <button onClick={onBrowse} className="md:hidden p-2 text-slate-400 hover:text-brand-green transition-all">
@@ -97,26 +98,26 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
               <span className="w-2 h-2 bg-brand-green rounded-full animate-pulse" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-brand-green">Verified Domestic Workers in Zimbabwe</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-black leading-[0.9] tracking-tighter mb-6 text-slate-900 uppercase">
+            <h1 className="text-4xl md:text-5xl font-black leading-[0.9] tracking-tighter mb-4 text-slate-900 uppercase">
               ZIMBABWE <br />
               <span className="text-brand-green">MAIDS CENTRE</span>
             </h1>
-            <p className="text-sm md:text-base text-slate-500 mb-10 max-w-lg leading-relaxed">
+            <p className="text-xs md:text-sm text-slate-500 mb-8 max-w-lg leading-relaxed">
               Zimbabwe's premier domestic worker center. Connect with verified maids, gardeners, and caregivers. Professional excellence, vetted for your peace of mind.
             </p>
             
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-3">
               <button 
                 onClick={onBrowse}
-                className="px-8 py-4 bg-brand-green text-white rounded-2xl font-bold flex items-center gap-3 shadow-trust hover:bg-emerald-800 transition-all"
+                className="px-6 py-3.5 bg-brand-green text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-trust hover:bg-emerald-800 transition-all"
               >
-                Find a Helper <ArrowRight size={20} />
+                Find a Helper <ArrowRight size={16} />
               </button>
               <button 
                 onClick={onGetStarted}
-                className="px-8 py-4 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all"
+                className="px-6 py-3.5 bg-white border-2 border-slate-100 text-slate-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
-                Register as Worker
+                Post a Job
               </button>
             </div>
 
@@ -187,15 +188,15 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
       {/* Categories */}
       <section className="py-20 px-6 bg-slate-50/50">
         <div className="max-w-7xl mx-auto text-center mb-16">
-          <h2 className="text-4xl font-black mb-4 tracking-tight">Available Professionals</h2>
-          <p className="text-slate-500 max-w-lg mx-auto mb-12">Zimbabwe's most trusted helpers, ready to start tomorrow. Verified and rated.</p>
+          <h2 className="text-3xl font-black mb-3 tracking-tight uppercase">Featured Professionals</h2>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest max-w-lg mx-auto mb-12">Verified and top-rated helpers ready to start</p>
           
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-brand-green" size={32} />
+              <Loader2 className="animate-spin text-brand-green" size={24} />
             </div>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-5">
               {featuredWorkers.map((w, idx) => (
                 <WorkerCard 
                   key={w.user.uid} 
@@ -209,9 +210,9 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
           
           <button 
             onClick={onBrowse}
-            className="mt-12 px-10 py-4 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all shadow-sm"
+            className="mt-12 px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
           >
-            View More Helpers
+            View All Helpers
           </button>
         </div>
 
