@@ -276,7 +276,6 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
           yearsExperience: 2 + Math.floor(Math.random() * 15),
           languages: ['English', 'Shona', Math.random() > 0.5 ? 'Ndebele' : 'Chewa'],
           skills: [category, 'Housekeeping', 'Punctuality'],
-          salaryExpectation: 'Negotiable',
           availability: Math.random() > 0.2 ? 'Available' : 'Busy',
           bio,
           isVerified: Math.random() > 0.1,
@@ -431,7 +430,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{w.profile.category}</span>
                                  <div className="flex items-center gap-2">
                                     <Star className="text-brand-gold" size={10} fill="currentColor" />
-                                    <span className="text-xs font-bold text-slate-600">{w.profile.rating}</span>
+                                    <span className="text-xs font-bold text-slate-600">{Math.round(w.profile.rating)}</span>
                                  </div>
                               </div>
                            </td>

@@ -38,9 +38,6 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
               <ShieldCheck size={18} />
             </div>
           )}
-          <div className="px-3 py-1.5 bg-white/95 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-slate-900 shadow-xl border border-slate-100">
-            {profile.category}
-          </div>
         </div>
         <div className="absolute bottom-4 right-4 h-10 w-10 bg-brand-gold rounded-full flex items-center justify-center text-white shadow-lg">
           <Star size={18} fill="currentColor" />
@@ -51,7 +48,15 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-tight mb-1">{worker.firstName}<br />{worker.surname}</h3>
-            <div className="flex items-center gap-1.5 text-slate-500">
+            <div className="flex items-center gap-2 mt-2">
+              <div className="px-2 py-0.5 bg-brand-green/10 text-brand-green rounded text-[8px] font-black uppercase tracking-widest">
+                {profile.category}
+              </div>
+              {profile.age && (
+                <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{profile.age} Yrs Old</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-500 mt-3">
               <MapPin size={12} className="text-brand-green" />
               <span className="text-[9px] font-black uppercase tracking-widest leading-none">{worker.location || 'Zimbabwe'}</span>
             </div>
@@ -65,7 +70,7 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
           </div>
           <div className="w-px h-6 bg-slate-100" />
           <div className="text-center flex-1">
-             <span className="block text-xs font-black text-slate-800 tracking-tighter">{profile.rating}</span>
+             <span className="block text-xs font-black text-slate-800 tracking-tighter">{Math.round(profile.rating)}</span>
              <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em]">Rating</span>
           </div>
           <div className="w-px h-6 bg-slate-100" />
@@ -185,7 +190,6 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
         const photoURL = photos[i % photos.length];
         const category = WORKER_CATEGORIES[Math.floor(Math.random() * WORKER_CATEGORIES.length)];
         const bio = bios[Math.floor(Math.random() * bios.length)];
-        const salary = `Negotiable`;
 
         await setDoc(doc(db, 'users', uid), {
           uid,
@@ -209,7 +213,6 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
           yearsExperience: 2 + Math.floor(Math.random() * 15),
           languages: ['English', 'Shona', Math.random() > 0.5 ? 'Ndebele' : 'Chewa'],
           skills: [category, 'Housekeeping', 'Punctuality'],
-          salaryExpectation: salary,
           availability: Math.random() > 0.2 ? 'Available' : 'Busy',
           bio,
           isVerified: Math.random() > 0.1,
@@ -303,7 +306,7 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
                    <p className="text-xs font-bold text-slate-800 leading-none">{profile.firstName}</p>
                    <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mt-1">{profile.role}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-brand-green/10 overflow-hidden border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform" onClick={onAuth}>
+                <div className="w-10 h-10 rounded-xl bg-brand-green/10 overflow-hidden border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
                   <img src={profile.photoURL || `https://ui-avatars.com/api/?name=${profile.firstName}`} alt="User" />
                 </div>
               </div>
@@ -584,7 +587,7 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
                    </div>
                    <div className="p-6 bg-slate-50 rounded-3xl text-center">
                       <Star className="mx-auto text-brand-gold mb-2" size={24} />
-                      <span className="block font-black text-lg leading-none">{selectedWorker.profile.rating}</span>
+                      <span className="block font-black text-lg leading-none">{Math.round(selectedWorker.profile.rating)}</span>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average</span>
                    </div>
                 </div>
@@ -645,12 +648,26 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
 
               {/* Bottom Action Bar */}
               <div className="sticky bottom-0 left-0 w-full p-8 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex gap-4">
-                <button 
-                  onClick={() => handleWhatsApp(selectedWorker.user)}
-                  className="flex-1 py-5 bg-brand-green text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-trust hover:bg-emerald-800 transition-all"
-                >
-                  <MessageCircle size={22} fill="currentColor" /> Direct WhatsApp Hire
-                </button>
+                {(profile?.isPremium || isAdmin) ? (
+                  <button 
+                    onClick={() => handleWhatsApp(selectedWorker.user)}
+                    className="flex-1 py-5 bg-brand-green text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-trust hover:bg-emerald-800 transition-all"
+                  >
+                    <MessageCircle size={22} fill="currentColor" /> Direct WhatsApp Hire
+                  </button>
+                ) : (
+                  <div className="flex-1 space-y-3">
+                    <button 
+                      onClick={() => alert("Premium access is required to view contact details and hire directly. Please upgrade your account.")}
+                      className="w-full py-5 bg-slate-900/50 text-white/50 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 cursor-not-allowed grayscale"
+                    >
+                      <ShieldCheck size={22} /> WhatsApp Contact Locked
+                    </button>
+                    <p className="text-[10px] text-center font-black text-slate-400 uppercase tracking-widest italic">
+                      Upgrade to <span className="text-brand-gold">Premium Employer</span> to unlock hiring
+                    </p>
+                  </div>
+                )}
                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
                   <Phone size={24} />
                 </div>

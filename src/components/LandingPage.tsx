@@ -71,20 +71,17 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
                 ))}
             </span>
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <button onClick={() => onGetStarted('employer')} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Maid</button>
-            <button onClick={() => onGetStarted('worker')} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Job</button>
-            <div className="w-px h-4 bg-slate-100" />
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => onGetStarted()}
-              className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-brand-green transition-all shadow-lg"
+              className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[8px] font-black uppercase tracking-[0.2em] hover:bg-brand-green transition-all shadow-lg md:px-5 md:py-2.5 md:rounded-xl md:text-[9px]"
             >
-              Sign In / Sign Up
+              Sign In
+            </button>
+            <button onClick={onBrowse} className="p-2 text-slate-400 hover:text-brand-green transition-all md:hidden">
+              <Search size={20} />
             </button>
           </div>
-          <button onClick={onBrowse} className="md:hidden p-2 text-slate-400 hover:text-brand-green transition-all">
-            <Search size={20} />
-          </button>
         </div>
       </header>
 

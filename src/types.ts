@@ -20,6 +20,7 @@ export interface User {
   photoURL?: string;
   age?: number;
   employerStatus?: EmployerStatus;
+  isPremium?: boolean;
   createdAt: any;
   updatedAt: any;
 }
@@ -32,7 +33,6 @@ export interface WorkerProfile {
   yearsExperience: number;
   languages: string[];
   skills: string[];
-  salaryExpectation: string;
   availability: AvailabilityStatus;
   bio: string;
   isVerified: boolean;

@@ -32,7 +32,6 @@
         "yearsExperience": { "type": "integer" },
         "languages": { "type": "array", "items": { "type": "string" } },
         "skills": { "type": "array", "items": { "type": "string" } },
-        "salaryExpectation": { "type": "string" },
         "availability": { "type": "string", "enum": ["Available", "Busy", "Away"] },
         "bio": { "type": "string" },
         "isVerified": { "type": "boolean" },

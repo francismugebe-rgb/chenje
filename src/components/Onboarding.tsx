@@ -32,7 +32,6 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
     experience: 0,
     age: 18,
     gender: 'female' as 'male' | 'female',
-    salary: '',
     bio: '',
     employerStatus: 'Mr' as EmployerStatus
   });
@@ -119,7 +118,6 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
         yearsExperience: Number(formData.experience),
         languages: ['English', 'Shona'],
         skills: [],
-        salaryExpectation: 'Negotiable',
         availability: 'Available' as AvailabilityStatus,
         bio: formData.bio,
         isVerified: false,

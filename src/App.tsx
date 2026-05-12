@@ -13,10 +13,39 @@ const Root = () => {
   const [onboardingRole, setOnboardingRole] = React.useState<'employer' | 'worker' | null>(null);
   const [onboardingLogin, setOnboardingLogin] = React.useState(false);
 
+  // Sync state with browser history
+  React.useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.view) {
+        setView(event.state.view);
+      } else if (view !== 'landing') {
+        const confirmExit = window.confirm("Do you want to exit the app?");
+        if (confirmExit) {
+          // In web apps we can't really "exit", but we can go back to landing
+          setView('landing');
+        } else {
+          // Push landing back to history so we stay here
+          window.history.pushState({ view: 'landing' }, '');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [view]);
+
+  // Wrapper for setView that pushes to history
+  const navigateTo = (newView: 'landing' | 'marketplace' | 'onboarding' | 'admin') => {
+    if (newView !== view) {
+      window.history.pushState({ view: newView }, '');
+      setView(newView);
+    }
+  };
+
   React.useEffect(() => {
     // Basic navigation logic
     if (view === 'admin' && !isAdmin) {
-      setView('landing');
+      navigateTo('landing');
     }
   }, [isAdmin, view]);
 
@@ -43,18 +72,22 @@ const Root = () => {
           exit={{ opacity: 0 }}
         >
           <LandingPage 
-            onBrowse={() => setView('marketplace')}
+            onBrowse={() => navigateTo('marketplace')}
             onGetStarted={(role?: 'employer' | 'worker') => {
-              setOnboardingRole(role || null);
-              setOnboardingLogin(false);
-              setView('onboarding');
+              if (user) {
+                navigateTo('marketplace');
+              } else {
+                setOnboardingRole(role || null);
+                setOnboardingLogin(false);
+                navigateTo('onboarding');
+              }
             }}
             onAdminPortal={() => {
               if (isAdmin) {
-                setView('admin');
+                navigateTo('admin');
               } else {
                 setOnboardingLogin(true);
-                setView('onboarding');
+                navigateTo('onboarding');
               }
             }}
           />
@@ -69,12 +102,12 @@ const Root = () => {
           exit={{ opacity: 0, scale: 1.02 }}
         >
           <Marketplace 
-            onAuth={() => setView('onboarding')}
+            onAuth={() => navigateTo('onboarding')}
           />
           {/* Admin shortcut if logged in */}
           {isAdmin && (
             <button 
-              onClick={() => setView('admin')}
+              onClick={() => navigateTo('admin')}
               className="fixed bottom-8 right-8 px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-2xl z-50 flex items-center gap-2"
             >
               <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
@@ -94,7 +127,7 @@ const Root = () => {
           <Onboarding 
             initialRole={onboardingRole}
             initialLogin={onboardingLogin}
-            onComplete={() => setView('marketplace')} 
+            onComplete={() => navigateTo('marketplace')} 
           />
         </motion.div>
       )}
@@ -106,7 +139,7 @@ const Root = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <AdminDashboard onBack={() => setView('marketplace')} />
+          <AdminDashboard onBack={() => navigateTo('marketplace')} />
         </motion.div>
       )}
     </AnimatePresence>
