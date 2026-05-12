@@ -15,7 +15,6 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(initialLogin);
-  const [isVerificationSent, setIsVerificationSent] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
   const [email, setEmail] = useState('');
@@ -46,14 +45,6 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
       let isNewUser = false;
       try {
         result = await signInWithEmailAndPassword(auth, email, password);
-        
-        // If logging in, check for verification
-        if (!result.user.emailVerified) {
-          await sendEmailVerification(result.user);
-          setIsVerificationSent(true);
-          setLoading(false);
-          return;
-        }
       } catch (err: any) {
         if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
           // If role is null, we are just trying to login. If it failed, don't auto-create.
@@ -61,10 +52,6 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
           
           result = await createUserWithEmailAndPassword(auth, email, password);
           isNewUser = true;
-          
-          // Send verification for new users
-          await sendEmailVerification(result.user);
-          setIsVerificationSent(true);
         } else {
           throw err;
         }
@@ -74,16 +61,17 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
         if (isNewUser) {
           await saveProfile(result.user.uid, result.user.email || email, result.user.photoURL);
         }
-        
-        if (result.user.emailVerified) {
-          onComplete();
-        }
+        onComplete();
       }
     } catch (err: any) {
       console.error("Email auth error:", err);
-      alert(err.message);
+      if (err.code === 'auth/too-many-requests') {
+        alert("Too many attempts. Please wait a few minutes before trying again.");
+      } else {
+        alert(err.message);
+      }
     } finally {
-      if (!isVerificationSent) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -166,6 +154,8 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
       console.error("Sign in error:", err);
       if (err.code === 'auth/popup-blocked') {
         alert("Sign-in popup was blocked. Please allow popups for this site.");
+      } else if (err.code === 'auth/too-many-requests') {
+        alert("Too many attempts. Please wait a few minutes before trying again.");
       } else if (err.code !== 'auth/cancelled-popup-request') {
         alert(err.message || "Failed to sign in with Google.");
       }
@@ -254,9 +244,10 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                     onClick={() => {
                         handleGoogleSignIn();
                     }}
-                    className="w-full py-4 border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
+                    disabled={loading}
+                    className="w-full py-4 border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50"
                   >
-                    <Star size={16} /> Admin Portal Login
+                    {loading ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full" /> : <><Star size={16} /> Admin Portal Login</>}
                   </button>
                 </div>
                 
@@ -264,33 +255,6 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                   By joining, you agree to our Terms of Use and Privacy Policy.
                 </p>
               </motion.div>
-            ) : isVerificationSent ? (
-                <motion.div 
-                    key="verification-view"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center"
-                >
-                    <div className="w-20 h-20 bg-brand-green/10 text-brand-green rounded-3xl flex items-center justify-center mx-auto mb-6">
-                        <MessageSquare size={40} />
-                    </div>
-                    <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tighter">Check your email</h2>
-                    <p className="text-slate-500 mb-8 leading-relaxed">
-                        We've sent a verification link to <span className="font-bold text-slate-900">{email}</span>. Please verify your email to complete registration.
-                    </p>
-                    <button 
-                        onClick={() => window.location.reload()}
-                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-brand-green transition-all"
-                    >
-                        I've Verified My Email
-                    </button>
-                    <button 
-                        onClick={() => setIsVerificationSent(false)}
-                        className="mt-6 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all"
-                    >
-                        Try a different email
-                    </button>
-                </motion.div>
             ) : isForgotPassword ? (
                 <motion.div 
                     key="forgot-password-view"
@@ -518,13 +482,18 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                           </button>
                           <button 
                             onClick={handleGoogleSignIn}
-                            className="flex-[2] py-4 bg-brand-green text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-trust"
+                            disabled={loading}
+                            className="flex-[2] py-4 bg-brand-green text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-trust disabled:opacity-50"
                           >
-                            Submit & Finish
+                            {loading ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mx-auto" /> : "Submit & Finish"}
                           </button>
                        </div>
                        
-                       <button onClick={handleGoogleSignIn} className="w-full text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em] hover:text-slate-400 transition-all">
+                       <button 
+                        onClick={handleGoogleSignIn} 
+                        disabled={loading}
+                        className="w-full text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em] hover:text-slate-400 transition-all disabled:opacity-50"
+                       >
                           Skip for now
                        </button>
                     </div>
