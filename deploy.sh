@@ -10,16 +10,19 @@ echo "🚀 Starting deployment for $APP_NAME..."
 # Navigate to the deployment path
 cd "$DEPLOY_PATH" || { echo "❌ Deployment path not found"; exit 1; }
 
-# Basic git pull
+# Force pull latest changes
 echo "📡 Pulling latest changes from main branch..."
-git pull origin main
+git fetch --all
+git reset --hard origin/main
+git clean -fd
 
 # Install dependencies
 echo "📥 Installing dependencies..."
 npm install
 
 # Build the application
-echo "🛠️ Building the production bundle..."
+echo "🛠️ Cleaning and building the production bundle..."
+npm run clean
 npm run build
 
 # Restart the application with PM2
