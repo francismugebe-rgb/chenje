@@ -155,6 +155,19 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
                     </div>
                     <ChevronRight className="ml-auto text-slate-300 group-hover:translate-x-1 transition-transform" />
                   </button>
+
+                  <button 
+                    onClick={handleGoogleSignIn}
+                    className="group flex items-center gap-6 p-4 rounded-3xl border-2 border-dashed border-slate-100 hover:border-slate-900 hover:bg-slate-50 transition-all text-left mt-2"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                      <Star size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-800">Admin Staff</h4>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Management Portal</p>
+                    </div>
+                  </button>
                 </div>
                 
                 <p className="mt-8 text-center text-xs text-slate-400">

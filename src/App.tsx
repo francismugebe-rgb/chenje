@@ -42,6 +42,7 @@ const Root = () => {
           <LandingPage 
             onBrowse={() => setView('marketplace')}
             onGetStarted={() => setView('onboarding')}
+            onAdminPortal={() => setView(isAdmin ? 'admin' : 'onboarding')}
           />
         </motion.div>
       )}

@@ -29,7 +29,11 @@ const TrustPillar = ({ title, desc, icon: Icon }: { title: string; desc: string;
   </div>
 );
 
-export const LandingPage = ({ onGetStarted, onBrowse }: { onGetStarted: () => void; onBrowse: () => void }) => {
+export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: { 
+  onGetStarted: () => void; 
+  onBrowse: () => void;
+  onAdminPortal: () => void;
+}) => {
   const [featuredWorkers, setFeaturedWorkers] = useState<{ user: User; profile: WorkerProfile }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -242,8 +246,14 @@ export const LandingPage = ({ onGetStarted, onBrowse }: { onGetStarted: () => vo
       </section>
       
       {/* Footer */}
-      <footer className="py-12 border-t border-slate-100 px-6 text-center text-slate-400 text-sm">
-        <p>© 2026 ZIMBABWE MAIDS CENTRE. All rights reserved.</p>
+      <footer className="py-12 border-t border-slate-100 px-6 text-center">
+        <p className="text-slate-400 text-sm mb-4">© 2026 ZIMBABWE MAIDS CENTRE. All rights reserved.</p>
+        <button 
+          onClick={onAdminPortal}
+          className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 hover:text-brand-green transition-all"
+        >
+          Admin Portal Login
+        </button>
       </footer>
     </div>
   );

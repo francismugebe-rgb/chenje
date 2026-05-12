@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Shield, FileCheck, AlertTriangle, 
   CheckCircle, XCircle, Search, 
-  Eye, MoreVertical, Loader2, Database, RefreshCw
+  Eye, MoreVertical, Loader2, Database, RefreshCw,
+  Edit, Trash2, MapPin, Briefcase, Star, Clock, Filter
 } from 'lucide-react';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc, setDoc, deleteDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { VerificationRequest, User, WorkerProfile, WORKER_CATEGORIES } from '../types';
+import { VerificationRequest, User, WorkerProfile, WORKER_CATEGORIES, AvailabilityStatus } from '../types';
 import { useAuth } from '../AuthContext';
 
 export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const { user: currentUser } = useAuth();
   const [requests, setRequests] = useState<(VerificationRequest & { worker: User & { profile: WorkerProfile } })[]>([]);
+  const [allWorkers, setAllWorkers] = useState<{ user: User; profile: WorkerProfile }[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'workers'>('pending');
+  
+  // States for worker editing
+  const [selectedWorker, setSelectedWorker] = useState<{ user: User; profile: WorkerProfile } | null>(null);
+  const [editData, setEditData] = useState<Partial<WorkerProfile>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetchRequests();
+    if (activeTab === 'workers') {
+      fetchWorkers();
+    } else {
+      fetchRequests();
+    }
   }, [activeTab]);
 
   const fetchRequests = async () => {
@@ -51,6 +62,67 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
       console.error("Admin fetch error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWorkers = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'worker_profiles'), limit(100));
+      const snap = await getDocs(q);
+      
+      const workersList = await Promise.all(snap.docs.map(async (docSnap) => {
+        const workerProfile = docSnap.data() as WorkerProfile;
+        const userRef = doc(db, 'users', workerProfile.userId);
+        const userSnap = await getDoc(userRef);
+        return {
+          user: userSnap.data() as User,
+          profile: workerProfile
+        };
+      }));
+
+      setAllWorkers(workersList);
+    } catch (err) {
+      console.error("Admin fetch workers error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateWorker = async () => {
+    if (!selectedWorker) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(doc(db, 'worker_profiles', selectedWorker.user.uid), {
+        ...editData,
+        updatedAt: serverTimestamp()
+      });
+      
+      setAllWorkers(prev => prev.map(w => 
+        w.user.uid === selectedWorker.user.uid 
+        ? { ...w, profile: { ...w.profile, ...editData } } 
+        : w
+      ));
+      setSelectedWorker(null);
+      alert('Worker profile updated successfully.');
+    } catch (err) {
+      console.error("Update error:", err);
+      alert('Failed to update worker.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteWorker = async (uid: string) => {
+    if (!window.confirm('Delete this worker profile permanently?')) return;
+    try {
+      await deleteDoc(doc(db, 'worker_profiles', uid));
+      await deleteDoc(doc(db, 'users', uid));
+      setAllWorkers(prev => prev.filter(w => w.user.uid !== uid));
+      alert('Worker deleted.');
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert('Failed to delete.');
     }
   };
 
@@ -183,7 +255,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Admin Control</h1>
           </div>
           <div className="flex bg-slate-100 p-1 rounded-xl">
-             {['pending', 'approved', 'rejected'].map((tab: any) => (
+             {['pending', 'approved', 'rejected', 'workers'].map((tab: any) => (
                <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -208,25 +280,93 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
 
         <div className="bg-white rounded-[32px] shadow-soft border border-slate-100 overflow-hidden">
            <div className="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
-              <h3 className="font-bold text-slate-800 tracking-tight capitalize">{activeTab} Requests</h3>
+              <h3 className="font-bold text-slate-800 tracking-tight capitalize">{activeTab} Queue</h3>
               <div className="relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                 <input placeholder="Search worker name..." className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none w-64 focus:border-brand-green transition-all" />
+                 <input placeholder={`Search ${activeTab}...`} className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none w-64 focus:border-brand-green transition-all" />
               </div>
            </div>
 
            <div className="overflow-x-auto">
-              <table className="w-full">
-                 <thead>
+              {activeTab === 'workers' ? (
+                <table className="w-full">
+                  <thead>
                     <tr className="bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
-                       <th className="px-8 py-4 text-left font-black">Worker</th>
-                       <th className="px-8 py-4 text-left font-black">Category</th>
-                       <th className="px-8 py-4 text-left font-black">Location</th>
-                       <th className="px-8 py-4 text-left font-black">Clearance Doc</th>
-                       <th className="px-8 py-4 text-right font-black">Actions</th>
+                        <th className="px-8 py-4 text-left font-black">Worker</th>
+                        <th className="px-8 py-4 text-left font-black">Details</th>
+                        <th className="px-8 py-4 text-left font-black">Status</th>
+                        <th className="px-8 py-4 text-right font-black">Actions</th>
                     </tr>
-                 </thead>
-                 <tbody className="divide-y divide-slate-50">
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {loading ? (
+                      [1,2,3].map(i => <SkeletonRow key={i} />)
+                    ) : (
+                      allWorkers.map(w => (
+                        <tr key={w.user.uid} className="hover:bg-slate-50/50 transition-colors">
+                           <td className="px-8 py-6">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100">
+                                    <img src={w.user.photoURL} alt="" className="w-full h-full object-cover" />
+                                 </div>
+                                 <div className="leading-tight">
+                                    <p className="font-black text-slate-800 tracking-tight text-sm uppercase">{w.user.firstName} {w.user.surname}</p>
+                                    <p className="text-[10px] font-bold text-slate-300 tracking-widest">{w.user.location}</p>
+                                 </div>
+                              </div>
+                           </td>
+                           <td className="px-8 py-6">
+                              <div className="flex flex-col gap-1">
+                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{w.profile.category}</span>
+                                 <div className="flex items-center gap-2">
+                                    <Star className="text-brand-gold" size={10} fill="currentColor" />
+                                    <span className="text-xs font-bold text-slate-600">{w.profile.rating}</span>
+                                 </div>
+                              </div>
+                           </td>
+                           <td className="px-8 py-6">
+                              <div className="flex gap-2">
+                                 {w.profile.isVerified && <Shield className="text-brand-green" size={16} />}
+                                 {w.profile.hasPoliceClearance && <FileCheck className="text-brand-gold" size={16} />}
+                                 <span className={`w-2 h-2 rounded-full mt-1.5 ${w.profile.availability === 'Available' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                              </div>
+                           </td>
+                           <td className="px-8 py-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                 <button 
+                                  onClick={() => {
+                                    setSelectedWorker(w);
+                                    setEditData(w.profile);
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-brand-green hover:bg-slate-50 rounded-lg transition-all"
+                                 >
+                                    <Edit size={16} />
+                                 </button>
+                                 <button 
+                                  onClick={() => handleDeleteWorker(w.user.uid)}
+                                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                 >
+                                    <Trash2 size={16} />
+                                 </button>
+                              </div>
+                           </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
+                        <th className="px-8 py-4 text-left font-black">Worker</th>
+                        <th className="px-8 py-4 text-left font-black">Category</th>
+                        <th className="px-8 py-4 text-left font-black">Location</th>
+                        <th className="px-8 py-4 text-left font-black">Clearance Doc</th>
+                        <th className="px-8 py-4 text-right font-black">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
                     {loading ? (
                       [1,2,3].map(i => <SkeletonRow key={i} />)
                     ) : (
@@ -286,16 +426,127 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                         </tr>
                       ))
                     )}
-                 </tbody>
-              </table>
-              {!loading && requests.length === 0 && (
+                  </tbody>
+                </table>
+              )}
+              {!loading && ((activeTab === 'workers' && allWorkers.length === 0) || (activeTab !== 'workers' && requests.length === 0)) && (
                 <div className="flex flex-col items-center justify-center py-32 text-slate-400">
                    <Shield size={48} className="mb-4 opacity-10" />
-                   <p className="text-sm font-bold uppercase tracking-widest">No profiles in this queue</p>
+                   <p className="text-sm font-bold uppercase tracking-widest">No profiles found</p>
                 </div>
               )}
            </div>
         </div>
+
+        {/* Worker Edit Modal */}
+        <AnimatePresence>
+          {selectedWorker && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+               <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white rounded-[32px] w-full max-w-xl shadow-2xl overflow-hidden overflow-y-auto max-h-[90vh]"
+               >
+                  <div className="p-8 border-b border-slate-50 flex items-center justify-between sticky top-0 bg-white z-10">
+                     <div>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Edit Worker Profile</h2>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedWorker.user.firstName} {selectedWorker.user.surname}</p>
+                     </div>
+                     <button onClick={() => setSelectedWorker(null)} className="p-2 hover:bg-slate-50 rounded-full transition-all">
+                        <XCircle size={24} className="text-slate-300" />
+                     </button>
+                  </div>
+
+                  <div className="p-8 space-y-6">
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Category</label>
+                           <select 
+                            value={editData.category}
+                            onChange={(e) => setEditData({...editData, category: e.target.value})}
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                           >
+                              {WORKER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                           </select>
+                        </div>
+                        <div>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Availability</label>
+                           <select 
+                            value={editData.availability}
+                            onChange={(e) => setEditData({...editData, availability: e.target.value as AvailabilityStatus})}
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                           >
+                              <option value="Available">Available</option>
+                              <option value="Busy">Busy</option>
+                              <option value="Away">Away</option>
+                           </select>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Age</label>
+                           <input 
+                            type="number"
+                            value={editData.age}
+                            onChange={(e) => setEditData({...editData, age: parseInt(e.target.value)})}
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                           />
+                        </div>
+                        <div>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Years Exp</label>
+                           <input 
+                            type="number"
+                            value={editData.yearsExperience}
+                            onChange={(e) => setEditData({...editData, yearsExperience: parseInt(e.target.value)})}
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                           />
+                        </div>
+                     </div>
+
+                     <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Bio</label>
+                        <textarea 
+                          value={editData.bio}
+                          onChange={(e) => setEditData({...editData, bio: e.target.value})}
+                          className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm h-32"
+                        />
+                     </div>
+
+                     <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-2xl">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                           <input 
+                            type="checkbox"
+                            checked={editData.isVerified}
+                            onChange={(e) => setEditData({...editData, isVerified: e.target.checked})}
+                            className="w-4 h-4 accent-brand-green"
+                           />
+                           <span className="text-[10px] font-black uppercase tracking-widest">Verified</span>
+                        </label>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                           <input 
+                            type="checkbox"
+                            checked={editData.hasPoliceClearance}
+                            onChange={(e) => setEditData({...editData, hasPoliceClearance: e.target.checked})}
+                            className="w-4 h-4 accent-brand-gold"
+                           />
+                           <span className="text-[10px] font-black uppercase tracking-widest">Police Cleared</span>
+                        </label>
+                     </div>
+
+                     <button 
+                      onClick={handleUpdateWorker}
+                      disabled={isSaving}
+                      className="w-full py-4 bg-brand-green text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-trust hover:bg-emerald-800 transition-all flex items-center justify-center gap-2"
+                     >
+                        {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Save Worker Changes'}
+                     </button>
+                  </div>
+               </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
