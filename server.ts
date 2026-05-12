@@ -26,10 +26,19 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     console.log("Mode: PRODUCTION (Static Assets)");
-    // Use __dirname for more reliable path resolution in different environments
     const distPath = path.resolve(__dirname, "dist");
     
-    console.log(`Checking for dist folder at: ${distPath}`);
+    console.log(`[Server] Production mode active.`);
+    console.log(`[Server] Serving static files from: ${distPath}`);
+    
+    // Safety check: is distPath valid?
+    import("fs").then(fs => {
+      if (!fs.existsSync(distPath)) {
+        console.error(`[Server] ERROR: 'dist' folder NOT FOUND at ${distPath}`);
+      } else {
+        console.log(`[Server] 'dist' folder found.`);
+      }
+    });
     
     app.use(express.static(distPath));
     
