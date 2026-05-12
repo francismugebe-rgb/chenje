@@ -5,6 +5,7 @@ import { WORKER_CATEGORIES, User, WorkerProfile } from '../types';
 import { collection, query, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { WorkerCard } from './Marketplace';
+import { useSettings } from '../SettingsContext';
 
 const CategoryCard = ({ name, icon: Icon }: { name: string; icon: any }) => (
   <motion.button
@@ -34,6 +35,7 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
   onBrowse: () => void;
   onAdminPortal: () => void;
 }) => {
+  const { settings } = useSettings();
   const [featuredWorkers, setFeaturedWorkers] = useState<{ user: User; profile: WorkerProfile }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,8 +68,18 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-brand-green rounded-lg flex items-center justify-center text-white font-black text-lg">Z</div>
-            <span className="font-black text-lg tracking-tighter text-slate-900">ZIMBABWE <span className="text-brand-green">MAIDS CENTRE</span></span>
+            {settings?.siteLogo ? (
+              <img src={settings.siteLogo} alt="Logo" className="h-8 w-auto object-contain" />
+            ) : (
+              <div className="w-8 h-8 bg-brand-green rounded-lg flex items-center justify-center text-white font-black text-lg">
+                {settings?.siteName?.charAt(0) || 'Z'}
+              </div>
+            )}
+            <span className="font-black text-lg tracking-tighter text-slate-900 uppercase">
+                {settings?.siteName?.split(' ').map((word, i) => (
+                    <span key={i} className={i === 1 ? "text-brand-green" : ""}>{word} </span>
+                ))}
+            </span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <button onClick={() => onGetStarted('employer')} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Maid</button>

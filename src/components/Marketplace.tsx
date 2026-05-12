@@ -10,6 +10,7 @@ import { collection, query, where, getDocs, limit, doc, getDoc, setDoc, serverTi
 import { db } from '../lib/firebase';
 import { User, WorkerProfile, WORKER_CATEGORIES } from '../types';
 import { useAuth } from '../AuthContext';
+import { useSettings } from '../SettingsContext';
 
 export interface WorkerCardProps {
   key?: string;
@@ -84,6 +85,7 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
 
 export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
   const { user, profile, isAdmin } = useAuth();
+  const { settings } = useSettings();
   const [workers, setWorkers] = useState<{ user: User; profile: WorkerProfile }[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWorker, setSelectedWorker] = useState<{ user: User; profile: WorkerProfile } | null>(null);
@@ -264,7 +266,7 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
   });
 
   const handleWhatsApp = (worker: User) => {
-    const text = encodeURIComponent(`Hi ${worker.firstName}, I saw your profile on ZIMBABWE MAIDS CENTRE and I'm interested in hiring you. Are you available?`);
+    const text = encodeURIComponent(`Hi ${worker.firstName}, I saw your profile on ${settings?.siteName || 'ZIMBABWE MAIDS CENTRE'} and I'm interested in hiring you. Are you available?`);
     window.open(`https://wa.me/${worker.whatsapp || worker.phone}?text=${text}`, '_blank');
   };
 
@@ -274,8 +276,18 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-brand-green/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-xl flex items-center justify-center text-white font-black text-xl">Z</div>
-            <span className="font-black text-xl tracking-tighter text-slate-900 hidden sm:block">ZIMBABWE <span className="text-brand-green">MAIDS CENTRE</span></span>
+             {settings?.siteLogo ? (
+              <img src={settings.siteLogo} alt="Logo" className="h-10 w-auto object-contain" />
+            ) : (
+              <div className="w-10 h-10 bg-brand-green rounded-xl flex items-center justify-center text-white font-black text-xl">
+                {settings?.siteName?.charAt(0) || 'Z'}
+              </div>
+            )}
+            <span className="font-black text-xl tracking-tighter text-slate-900 hidden sm:block uppercase">
+                {settings?.siteName?.split(' ').map((word, i) => (
+                    <span key={i} className={i === 1 ? "text-brand-green" : ""}>{word} </span>
+                ))}
+            </span>
           </div>
 
           <div className="flex-1 max-w-xl mx-8 hidden md:flex relative">

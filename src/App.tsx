@@ -1,5 +1,6 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
+import { SettingsProvider } from './SettingsContext';
 import { LandingPage } from './components/LandingPage';
 import { Marketplace } from './components/Marketplace';
 import { Onboarding } from './components/Onboarding';
@@ -115,7 +116,9 @@ const Root = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <Root />
+      <SettingsProvider>
+        <Root />
+      </SettingsProvider>
     </AuthProvider>
   );
 }

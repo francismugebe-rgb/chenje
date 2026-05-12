@@ -2,6 +2,12 @@ export type UserRole = 'worker' | 'employer' | 'admin';
 export type AvailabilityStatus = 'Available' | 'Busy' | 'Away';
 export type EmployerStatus = 'Mr' | 'Mrs' | 'Miss' | 'Family' | 'Company';
 
+export interface SiteSettings {
+  siteName: string;
+  siteLogo: string;
+  updatedAt: any;
+}
+
 export interface User {
   uid: string;
   email: string;
@@ -12,6 +18,7 @@ export interface User {
   whatsapp?: string;
   location: string;
   photoURL?: string;
+  age?: number;
   employerStatus?: EmployerStatus;
   createdAt: any;
   updatedAt: any;

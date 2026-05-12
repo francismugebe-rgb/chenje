@@ -83,6 +83,17 @@
         }
       },
       "description": "Admin queue for police clearance verification."
+    },
+    "/settings/{configId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "siteName": { "type": "string" },
+          "siteLogo": { "type": "string" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Global application configuration."
     }
   }
 }

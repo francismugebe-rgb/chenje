@@ -72,5 +72,10 @@ service cloud.firestore {
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
       allow update: if isAdmin();
     }
+
+    match /settings/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

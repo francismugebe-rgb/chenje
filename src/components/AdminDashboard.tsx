@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Shield, FileCheck, AlertTriangle, 
-  CheckCircle, XCircle, Search, 
+  CheckCircle, XCircle, Search, Settings,
   Eye, MoreVertical, Loader2, Database, RefreshCw,
-  Edit, Trash2, MapPin, Briefcase, Star, Clock, Filter
+  Edit, Trash2, MapPin, Briefcase, Star, Clock, Filter, Globe, Camera
 } from 'lucide-react';
 import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc, setDoc, deleteDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { VerificationRequest, User, WorkerProfile, WORKER_CATEGORIES, AvailabilityStatus } from '../types';
+import { VerificationRequest, User, WorkerProfile, WORKER_CATEGORIES, AvailabilityStatus, SiteSettings } from '../types';
 import { useAuth } from '../AuthContext';
 
 export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
@@ -17,20 +17,66 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const [allWorkers, setAllWorkers] = useState<{ user: User; profile: WorkerProfile }[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'workers'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'workers' | 'settings'>('pending');
+  
+  // Site settings state
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [editSiteData, setEditSiteData] = useState<Partial<SiteSettings>>({});
   
   // States for worker editing
   const [selectedWorker, setSelectedWorker] = useState<{ user: User; profile: WorkerProfile } | null>(null);
   const [editData, setEditData] = useState<Partial<WorkerProfile>>({});
+  const [editUserData, setEditUserData] = useState<Partial<User>>({});
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'workers') {
       fetchWorkers();
+    } else if (activeTab === 'settings') {
+      fetchSettings();
     } else {
       fetchRequests();
     }
   }, [activeTab]);
+
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      const docRef = doc(db, 'settings', 'site');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data() as SiteSettings;
+        setSiteSettings(data);
+        setEditSiteData(data);
+      } else {
+        // Init default if not exists
+        const defaultSettings = { siteName: 'ZIMBABWE MAIDS CENTRE', siteLogo: '' };
+        setSiteSettings(defaultSettings as SiteSettings);
+        setEditSiteData(defaultSettings);
+      }
+    } catch (err) {
+      console.error("Fetch settings error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateSettings = async () => {
+    setIsSaving(true);
+    try {
+      await setDoc(doc(db, 'settings', 'site'), {
+        ...editSiteData,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      alert('Site settings updated!');
+      setSiteSettings(prev => ({ ...prev, ...editSiteData } as SiteSettings));
+    } catch (err) {
+      console.error("Update settings error:", err);
+      alert('Failed to update settings.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -93,18 +139,29 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
     if (!selectedWorker) return;
     setIsSaving(true);
     try {
+      // Update worker profile
       await updateDoc(doc(db, 'worker_profiles', selectedWorker.user.uid), {
         ...editData,
+        updatedAt: serverTimestamp()
+      });
+
+      // Update user document (name and photo)
+      await updateDoc(doc(db, 'users', selectedWorker.user.uid), {
+        ...editUserData,
         updatedAt: serverTimestamp()
       });
       
       setAllWorkers(prev => prev.map(w => 
         w.user.uid === selectedWorker.user.uid 
-        ? { ...w, profile: { ...w.profile, ...editData } } 
+        ? { 
+            ...w, 
+            user: { ...w.user, ...editUserData },
+            profile: { ...w.profile, ...editData } 
+          } 
         : w
       ));
       setSelectedWorker(null);
-      alert('Worker profile updated successfully.');
+      alert('Worker profile and account updated successfully.');
     } catch (err) {
       console.error("Update error:", err);
       alert('Failed to update worker.');
@@ -255,7 +312,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Admin Control</h1>
           </div>
           <div className="flex bg-slate-100 p-1 rounded-xl">
-             {['pending', 'approved', 'rejected', 'workers'].map((tab: any) => (
+             {['pending', 'approved', 'rejected', 'workers', 'settings'].map((tab: any) => (
                <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -288,7 +345,61 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
            </div>
 
            <div className="overflow-x-auto">
-              {activeTab === 'workers' ? (
+              {activeTab === 'settings' ? (
+                <div className="p-12 max-w-2xl mx-auto">
+                    <div className="flex items-center gap-4 mb-10">
+                        <div className="w-16 h-16 bg-brand-green/10 text-brand-green rounded-[24px] flex items-center justify-center">
+                            <Settings size={32} />
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Site Configuration</h2>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Branding and Identity</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 block">Site Name</label>
+                            <input 
+                                value={editSiteData.siteName}
+                                onChange={e => setEditSiteData({...editSiteData, siteName: e.target.value})}
+                                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green focus:bg-white transition-all"
+                                placeholder="e.g. ZIMBABWE MAIDS CENTRE"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 block">Site Logo URL</label>
+                            <div className="relative">
+                                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                <input 
+                                    value={editSiteData.siteLogo}
+                                    onChange={e => setEditSiteData({...editSiteData, siteLogo: e.target.value})}
+                                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green focus:bg-white transition-all"
+                                    placeholder="https://example.com/logo.png"
+                                />
+                            </div>
+                            {editSiteData.siteLogo && (
+                                <div className="mt-4 p-4 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center gap-2">
+                                    <p className="text-[9px] font-black uppercase text-slate-400">Preview</p>
+                                    <div className="h-12 flex items-center gap-2">
+                                        <img src={editSiteData.siteLogo} alt="Logo Preview" className="h-full object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                        <span className="font-black text-lg tracking-tighter text-slate-900">{editSiteData.siteName}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <button 
+                            onClick={handleUpdateSettings}
+                            disabled={isSaving}
+                            className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-brand-green transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" size={18} /> : <>Save Configuration Changes</>}
+                        </button>
+                    </div>
+                </div>
+              ) : activeTab === 'workers' ? (
                 <table className="w-full">
                   <thead>
                     <tr className="bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
@@ -337,6 +448,12 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                                   onClick={() => {
                                     setSelectedWorker(w);
                                     setEditData(w.profile);
+                                    setEditUserData({
+                                       firstName: w.user.firstName,
+                                       surname: w.user.surname,
+                                       photoURL: w.user.photoURL,
+                                       age: w.user.age
+                                    });
                                   }}
                                   className="p-2 text-slate-400 hover:text-brand-green hover:bg-slate-50 rounded-lg transition-all"
                                  >
@@ -459,13 +576,53 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                   </div>
 
                   <div className="p-8 space-y-6">
+                     <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center gap-6">
+                        <div className="relative group">
+                            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-200 border-2 border-white shadow-md">
+                                <img src={editUserData.photoURL || selectedWorker.user.photoURL} alt="" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center rounded-2xl pointer-events-none">
+                                <Camera className="text-white" size={18} />
+                            </div>
+                        </div>
+                        <div className="flex-1 space-y-3">
+                            <div>
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Full Name</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input 
+                                        placeholder="First Name" 
+                                        value={editUserData.firstName}
+                                        onChange={e => setEditUserData({...editUserData, firstName: e.target.value})}
+                                        className="w-full text-xs font-bold p-2 rounded-lg border border-slate-200" 
+                                    />
+                                    <input 
+                                        placeholder="Surname" 
+                                        value={editUserData.surname}
+                                        onChange={e => setEditUserData({...editUserData, surname: e.target.value})}
+                                        className="w-full text-xs font-bold p-2 rounded-lg border border-slate-200" 
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Profile URL</label>
+                                <input 
+                                    placeholder="Photo URL (e.g. https://...)" 
+                                    value={editUserData.photoURL}
+                                    onChange={e => setEditUserData({...editUserData, photoURL: e.target.value})}
+                                    className="w-full text-[10px] p-2 rounded-lg border border-slate-200 focus:border-brand-green outline-none" 
+                                />
+                                <p className="text-[8px] text-slate-400 mt-1 font-bold">Paste a direct image link to update the profile picture.</p>
+                            </div>
+                        </div>
+                     </div>
+
                      <div className="grid grid-cols-2 gap-4">
                         <div>
                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Category</label>
                            <select 
                             value={editData.category}
                             onChange={(e) => setEditData({...editData, category: e.target.value})}
-                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold"
                            >
                               {WORKER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                            </select>
@@ -475,7 +632,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                            <select 
                             value={editData.availability}
                             onChange={(e) => setEditData({...editData, availability: e.target.value as AvailabilityStatus})}
-                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold"
                            >
                               <option value="Available">Available</option>
                               <option value="Busy">Busy</option>
@@ -486,12 +643,16 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
 
                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Age</label>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Site Age (Worker Profile)</label>
                            <input 
                             type="number"
                             value={editData.age}
-                            onChange={(e) => setEditData({...editData, age: parseInt(e.target.value)})}
-                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                setEditData({...editData, age: val});
+                                setEditUserData({...editUserData, age: val});
+                            }}
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold"
                            />
                         </div>
                         <div>
@@ -500,7 +661,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                             type="number"
                             value={editData.yearsExperience}
                             onChange={(e) => setEditData({...editData, yearsExperience: parseInt(e.target.value)})}
-                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm"
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold"
                            />
                         </div>
                      </div>
