@@ -56,10 +56,6 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
               <span className="text-[9px] font-black uppercase tracking-widest leading-none">{worker.location || 'Zimbabwe'}</span>
             </div>
           </div>
-          <div className="text-right">
-            <span className="block text-brand-green font-black text-[9px] uppercase tracking-[0.15em] mb-0.5">Negotiable</span>
-            <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded-md">Expected</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-50">
@@ -70,7 +66,7 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
           <div className="w-px h-6 bg-slate-100" />
           <div className="text-center flex-1">
              <span className="block text-xs font-black text-slate-800 tracking-tighter">{profile.rating}</span>
-             <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em]">Rate</span>
+             <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em]">Rating</span>
           </div>
           <div className="w-px h-6 bg-slate-100" />
           <div className="text-center flex-1">
@@ -371,6 +367,57 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
              <button onClick={() => {setFilterCategory('All'); setSearchQuery('');}} className="mt-8 text-brand-green font-bold text-sm uppercase tracking-widest underline underline-offset-4">Reset all filters</button>
           </div>
         )}
+
+        {/* Value Proposition */}
+        <section className="py-24 relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-2">Why Zimbabwe Maids Centre?</h2>
+              <p className="text-[10px] font-black text-brand-green uppercase tracking-[0.3em]">Built on Trust, Delivered with Excellence</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              <motion.div 
+                 whileHover={{ y: -10 }}
+                 className="p-10 bg-white rounded-[48px] shadow-2xl border border-slate-50 relative group"
+              >
+                <div className="w-20 h-20 bg-brand-green/10 text-brand-green rounded-[28px] flex items-center justify-center mb-8 group-hover:bg-brand-green group-hover:text-white transition-all duration-500">
+                  <ShieldCheck size={40} />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Vetted Security</h3>
+                <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                  Every professional undergoes a strict police clearance check and identity verification for your safety.
+                </p>
+              </motion.div>
+
+              <motion.div 
+                 whileHover={{ y: -10 }}
+                 className="p-10 bg-brand-gold text-white rounded-[48px] shadow-2xl relative group overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2" />
+                <div className="w-20 h-20 bg-white/20 text-white rounded-[28px] flex items-center justify-center mb-8">
+                  <Star size={40} fill="currentColor" />
+                </div>
+                <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">Top Ratings</h3>
+                <p className="text-sm text-white/90 font-medium leading-relaxed">
+                  Our rating system ensures you only see the most reliable and efficient domestic help in Zimbabwe.
+                </p>
+              </motion.div>
+
+              <motion.div 
+                 whileHover={{ y: -10 }}
+                 className="p-10 bg-slate-900 text-white rounded-[48px] shadow-2xl relative group"
+              >
+                <div className="w-20 h-20 bg-white/10 text-brand-green rounded-[28px] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                  <MessageCircle size={40} />
+                </div>
+                <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">Direct Hiring</h3>
+                <p className="text-sm text-slate-300 font-medium leading-relaxed">
+                  Hire directly via WhatsApp. No middle-man fees, no complex contracts. Just direct connection.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Profile Detail Modal */}
@@ -431,11 +478,6 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
                         <div className="w-1 h-1 bg-slate-200 rounded-full" />
                         <div className="text-slate-400 font-black uppercase tracking-widest text-[9px] italic">{selectedWorker.profile.category}</div>
                       </div>
-                    </div>
-                    
-                    <div className="text-right">
-                       <span className="block text-3xl font-black text-brand-green leading-none">Negotiable</span>
-                       <span className="text-xs font-bold text-slate-300 uppercase tracking-widest mt-2 block">Employer Choice</span>
                     </div>
                   </div>
                 </div>

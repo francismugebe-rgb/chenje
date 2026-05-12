@@ -20,16 +20,6 @@ const CategoryCard = ({ name, icon: Icon }: { name: string; icon: any }) => (
   </motion.button>
 );
 
-const TrustPillar = ({ title, desc, icon: Icon }: { title: string; desc: string; icon: any }) => (
-  <div className="flex flex-col items-center text-center p-6">
-    <div className="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold mb-4">
-      <Icon size={32} />
-    </div>
-    <h3 className="font-bold text-lg mb-2">{title}</h3>
-    <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
-  </div>
-);
-
 export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: { 
   onGetStarted: (role?: 'employer' | 'worker') => void; 
   onBrowse: () => void;
@@ -197,38 +187,11 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
         </div>
       </section>
 
-      {/* Value Proposition */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
-          <div className="group p-8 bg-white rounded-[40px] border border-slate-100 shadow-soft hover:shadow-trust transition-all">
-            <div className="w-14 h-14 bg-brand-green/10 rounded-2xl flex items-center justify-center text-brand-green mb-6 group-hover:scale-110 transition-transform">
-              <ShieldCheck size={32} />
-            </div>
-            <h3 className="text-xl font-black mb-3 tracking-tight uppercase">Vetted Security</h3>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Every professional undergoes a strict police clearance check and identity verification for your safety.</p>
-          </div>
-          <div className="group p-8 bg-white rounded-[40px] border border-slate-100 shadow-soft hover:shadow-trust transition-all">
-            <div className="w-14 h-14 bg-brand-gold/10 rounded-2xl flex items-center justify-center text-brand-gold mb-6 group-hover:scale-110 transition-transform">
-              <Star size={32} />
-            </div>
-            <h3 className="text-xl font-black mb-3 tracking-tight uppercase">Top Ratings</h3>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Our rating system ensures you only see the most reliable and efficient domestic help in Zimbabwe.</p>
-          </div>
-          <div className="group p-8 bg-white rounded-[40px] border border-slate-100 shadow-soft hover:shadow-trust transition-all">
-            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
-              <MessageCircle size={32} />
-            </div>
-            <h3 className="text-xl font-black mb-3 tracking-tight uppercase">Direct Hiring</h3>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Hire directly via WhatsApp. No middle-man fees, no complex contracts. Just direct connection.</p>
-          </div>
-        </div>
-      </section>
-
       {/* Categories */}
       <section className="py-20 px-6 bg-slate-50/50">
         <div className="max-w-7xl mx-auto text-center mb-16">
-          <h2 className="text-3xl font-black mb-3 tracking-tight uppercase">Featured Professionals</h2>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest max-w-lg mx-auto mb-12">Verified and top-rated helpers ready to start</p>
+          <h2 className="text-4xl font-black mb-3 tracking-tighter uppercase text-slate-900">Featured Professionals</h2>
+          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] max-w-lg mx-auto mb-12">Verified and top-rated helpers ready to start</p>
           
           {loading ? (
             <div className="flex items-center justify-center py-20">
@@ -249,13 +212,13 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
           
           <button 
             onClick={onBrowse}
-            className="mt-12 px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
+            className="mt-12 px-8 py-3.5 bg-white border border-slate-100 text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-soft"
           >
             View All Helpers
           </button>
         </div>
 
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto mt-24">
           <div className="flex flex-col items-center text-center mb-16">
             <h2 className="text-2xl font-black mb-4 tracking-tight">Browse by Category</h2>
           </div>
@@ -271,25 +234,56 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
         </div>
       </section>
 
-      {/* Trust Pillars */}
-      <section className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-8">
-          <TrustPillar 
-            icon={Shield} 
-            title="Police Vetted" 
-            desc="Every profile must upload a recent police clearance certificate before being verified by our admin team."
-          />
-          <TrustPillar 
-            icon={MessageSquare} 
-            title="Direct WhatsApp" 
-            desc="No complicated middleman. Chat directly with your potential help and arrange interviews at your convenience."
-          />
-          <TrustPillar 
-            icon={FileCheck} 
-            title="Professional Profiles" 
-            desc="Detailed work history, salary expectations, and skills are displayed to help you make informed decisions."
-          />
+      {/* Value Proposition */}
+      <section className="py-24 px-6 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-2">Why Zimbabwe Maids Centre?</h2>
+            <p className="text-[10px] font-black text-brand-green uppercase tracking-[0.3em]">Built on Trust, Delivered with Excellence</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <motion.div 
+               whileHover={{ y: -10 }}
+               className="p-10 bg-white rounded-[48px] shadow-2xl border border-slate-50 relative group"
+            >
+              <div className="w-20 h-20 bg-brand-green/10 text-brand-green rounded-[28px] flex items-center justify-center mb-8 group-hover:bg-brand-green group-hover:text-white transition-all duration-500">
+                <ShieldCheck size={40} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Vetted Security</h3>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                Every professional undergoes a strict police clearance check and identity verification for your safety.
+              </p>
+            </motion.div>
+
+            <motion.div 
+               whileHover={{ y: -10 }}
+               className="p-10 bg-brand-gold text-white rounded-[48px] shadow-2xl relative group overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2" />
+              <div className="w-20 h-20 bg-white/20 text-white rounded-[28px] flex items-center justify-center mb-8">
+                <Star size={40} fill="currentColor" />
+              </div>
+              <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">Top Ratings</h3>
+              <p className="text-sm text-white/90 font-medium leading-relaxed">
+                Our rating system ensures you only see the most reliable and efficient domestic help in Zimbabwe.
+              </p>
+            </motion.div>
+
+            <motion.div 
+               whileHover={{ y: -10 }}
+               className="p-10 bg-slate-900 text-white rounded-[48px] shadow-2xl relative group"
+            >
+              <div className="w-20 h-20 bg-white/10 text-brand-green rounded-[28px] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                <MessageCircle size={40} />
+              </div>
+              <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">Direct Hiring</h3>
+              <p className="text-sm text-slate-300 font-medium leading-relaxed">
+                Hire directly via WhatsApp. No middle-man fees, no complex contracts. Just direct connection.
+              </p>
+            </motion.div>
+          </div>
         </div>
+        <div className="absolute top-1/2 left-0 w-full h-px bg-slate-100 -z-0" />
       </section>
 
       {/* CTA Section */}
