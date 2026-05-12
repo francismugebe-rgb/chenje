@@ -6,11 +6,15 @@ import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, si
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserRole, WORKER_CATEGORIES, AvailabilityStatus, EmployerStatus } from '../types';
 
-export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
-  const [role, setRole] = useState<UserRole | null>(null);
+export const Onboarding = ({ onComplete, initialRole = null, initialLogin = false }: { 
+  onComplete: () => void;
+  initialRole?: UserRole | null;
+  initialLogin?: boolean;
+}) => {
+  const [role, setRole] = useState<UserRole | null>(initialRole);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(initialLogin);
   const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -221,6 +225,14 @@ export const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
                     <button onClick={() => setIsLoggingIn(false)} className="text-xs font-bold text-brand-green uppercase tracking-widest mb-6 block">← Back to selection</button>
                     <h2 className="text-2xl font-black text-slate-800 mb-2">Welcome Back</h2>
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">Sign in to your account</p>
+
+                    <div className="p-6 bg-brand-green/5 rounded-3xl border border-brand-green/10 mb-8 items-center flex gap-4">
+                        <div className="w-12 h-12 bg-brand-green text-white rounded-2xl flex items-center justify-center font-black">A</div>
+                        <div>
+                            <h4 className="font-bold text-slate-800 text-sm">Admin Access</h4>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Management Credentials Required</p>
+                        </div>
+                    </div>
 
                     <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl mb-6">
                         <button 

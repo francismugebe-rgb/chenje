@@ -30,7 +30,7 @@ const TrustPillar = ({ title, desc, icon: Icon }: { title: string; desc: string;
 );
 
 export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: { 
-  onGetStarted: () => void; 
+  onGetStarted: (role?: 'employer' | 'worker') => void; 
   onBrowse: () => void;
   onAdminPortal: () => void;
 }) => {
@@ -70,11 +70,11 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
             <span className="font-black text-lg tracking-tighter text-slate-900">ZIMBABWE <span className="text-brand-green">MAIDS CENTRE</span></span>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <button onClick={onBrowse} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Maid</button>
-            <button onClick={onGetStarted} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Job</button>
+            <button onClick={() => onGetStarted('employer')} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Maid</button>
+            <button onClick={() => onGetStarted('worker')} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-green transition-all">Find a Job</button>
             <div className="w-px h-4 bg-slate-100" />
             <button 
-              onClick={onGetStarted}
+              onClick={() => onGetStarted()}
               className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-brand-green transition-all shadow-lg"
             >
               Sign In / Sign Up
@@ -114,7 +114,7 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
                 Find a Helper <ArrowRight size={16} />
               </button>
               <button 
-                onClick={onGetStarted}
+                onClick={() => onGetStarted('worker')}
                 className="px-6 py-3.5 bg-white border-2 border-slate-100 text-slate-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
                 Post a Job
@@ -261,7 +261,7 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
             <p className="text-emerald-100 text-lg mb-10 max-w-lg mx-auto">Join thousands of Zimbabwean families finding security and quality help through ZIMBABWE MAIDS CENTRE.</p>
             <div className="flex flex-wrap justify-center gap-4">
               <button onClick={onBrowse} className="px-10 py-5 bg-white text-brand-green rounded-2xl font-bold text-lg hover:bg-slate-100 transition-all shadow-xl">Start Browsing</button>
-              <button onClick={onGetStarted} className="px-10 py-5 bg-brand-gold text-white rounded-2xl font-bold text-lg hover:bg-yellow-600 transition-all shadow-xl">Worker Sign-up</button>
+              <button onClick={() => onGetStarted('worker')} className="px-10 py-5 bg-brand-gold text-white rounded-2xl font-bold text-lg hover:bg-yellow-600 transition-all shadow-xl">Worker Sign-up</button>
             </div>
           </div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />

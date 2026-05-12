@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'motion/react';
 const Root = () => {
   const { user, profile, loading, isAdmin } = useAuth();
   const [view, setView] = React.useState<'landing' | 'marketplace' | 'onboarding' | 'admin'>('landing');
+  const [onboardingRole, setOnboardingRole] = React.useState<'employer' | 'worker' | null>(null);
+  const [onboardingLogin, setOnboardingLogin] = React.useState(false);
 
   React.useEffect(() => {
     // Basic navigation logic
@@ -41,8 +43,19 @@ const Root = () => {
         >
           <LandingPage 
             onBrowse={() => setView('marketplace')}
-            onGetStarted={() => setView('onboarding')}
-            onAdminPortal={() => setView(isAdmin ? 'admin' : 'onboarding')}
+            onGetStarted={(role?: 'employer' | 'worker') => {
+              setOnboardingRole(role || null);
+              setOnboardingLogin(false);
+              setView('onboarding');
+            }}
+            onAdminPortal={() => {
+              if (isAdmin) {
+                setView('admin');
+              } else {
+                setOnboardingLogin(true);
+                setView('onboarding');
+              }
+            }}
           />
         </motion.div>
       )}
@@ -77,7 +90,11 @@ const Root = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
         >
-          <Onboarding onComplete={() => setView('marketplace')} />
+          <Onboarding 
+            initialRole={onboardingRole}
+            initialLogin={onboardingLogin}
+            onComplete={() => setView('marketplace')} 
+          />
         </motion.div>
       )}
 
