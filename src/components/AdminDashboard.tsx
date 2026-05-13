@@ -4,7 +4,7 @@ import {
   Users, Shield, FileCheck, AlertTriangle, 
   CheckCircle, XCircle, Search, Settings,
   Eye, MoreVertical, Loader2, Database, RefreshCw,
-  Edit, Trash2, MapPin, Briefcase, Star, Clock, Filter, Globe, Camera
+  Edit, Trash2, MapPin, Briefcase, Star, Clock, Filter, Globe, Camera, UserPlus
 } from 'lucide-react';
 import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc, setDoc, deleteDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -16,9 +16,10 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const [requests, setRequests] = useState<(VerificationRequest & { worker?: User & { profile: WorkerProfile }; user?: User })[]>([]);
   const [employerRequests, setEmployerRequests] = useState<(VerificationRequest & { user: User })[]>([]);
   const [allWorkers, setAllWorkers] = useState<{ user: User; profile: WorkerProfile }[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'workers' | 'employer_verifications' | 'settings'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'workers' | 'employer_verifications' | 'settings' | 'users'>('pending');
   
   // Site settings state
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -26,6 +27,8 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   
   // States for worker editing
   const [selectedWorker, setSelectedWorker] = useState<{ user: User; profile: WorkerProfile } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [editData, setEditData] = useState<Partial<WorkerProfile>>({});
   const [editUserData, setEditUserData] = useState<Partial<User>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -33,6 +36,8 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   useEffect(() => {
     if (activeTab === 'workers') {
       fetchWorkers();
+    } else if (activeTab === 'users') {
+      fetchAllUsers();
     } else if (activeTab === 'settings') {
       fetchSettings();
     } else if (activeTab === 'employer_verifications') {
@@ -41,6 +46,30 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
       fetchRequests();
     }
   }, [activeTab]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      callback(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const fetchAllUsers = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      setAllUsers(snap.docs.map(d => ({ ...d.data(), uid: d.id } as User)));
+    } catch (err) {
+      console.error("Fetch all users error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -165,6 +194,68 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
       console.error("Admin fetch workers error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!editUserData.email || !editUserData.firstName || !editUserData.role) {
+      alert("Please fill in required fields (Email, First Name, Role)");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const newUid = `user_${Date.now()}`;
+      const newUser = {
+        ...editUserData,
+        uid: newUid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        photoURL: editUserData.photoURL || `https://ui-avatars.com/api/?name=${editUserData.firstName}&background=0D9488&color=fff`
+      };
+      await setDoc(doc(db, 'users', newUid), newUser);
+      
+      if (editUserData.role === 'worker') {
+        await setDoc(doc(db, 'worker_profiles', newUid), {
+          category: 'Maid',
+          yearsExperience: 0,
+          availability: 'Available',
+          bio: 'Worker added by Admin',
+          skills: [],
+          rating: 5,
+          reviews: 0,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      alert("User created successfully! Note: This creates a profile record only. They will need to register with this email to access it.");
+      setIsCreatingUser(false);
+      setEditUserData({});
+      fetchAllUsers();
+    } catch (err) {
+      console.error("Create user error:", err);
+      alert("Failed to create user.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(doc(db, 'users', selectedUser.uid), {
+        ...editUserData,
+        updatedAt: serverTimestamp()
+      });
+      alert("User profile updated!");
+      setSelectedUser(null);
+      setEditUserData({});
+      fetchAllUsers();
+    } catch (err) {
+      console.error("Update user error:", err);
+      alert("Failed to update user.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -363,7 +454,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Admin Control</h1>
           </div>
           <div className="flex bg-slate-100 p-1 rounded-xl">
-             {['pending', 'approved', 'rejected', 'workers', 'employer_verifications', 'settings'].map((tab: any) => (
+             {['pending', 'approved', 'rejected', 'workers', 'employer_verifications', 'users', 'settings'].map((tab: any) => (
                <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -389,9 +480,22 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
         <div className="bg-white rounded-[32px] shadow-soft border border-slate-100 overflow-hidden">
            <div className="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
               <h3 className="font-bold text-slate-800 tracking-tight capitalize">{activeTab} Queue</h3>
-              <div className="relative">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                 <input placeholder={`Search ${activeTab}...`} className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none w-64 focus:border-brand-green transition-all" />
+              <div className="flex items-center gap-4">
+                {activeTab === 'users' && (
+                  <button 
+                    onClick={() => {
+                      setEditUserData({ role: 'worker' });
+                      setIsCreatingUser(true);
+                    }}
+                    className="px-4 py-2 bg-brand-green text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-800 transition-all shadow-sm"
+                  >
+                    <UserPlus size={14} /> Add New User
+                  </button>
+                )}
+                <div className="relative">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                   <input placeholder={`Search ${activeTab}...`} className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none w-64 focus:border-brand-green transition-all" />
+                </div>
               </div>
            </div>
 
@@ -506,7 +610,72 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                     )}
                   </tbody>
                 </table>
-              ) : activeTab === 'workers' ? (
+              ) : activeTab === 'users' ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
+                        <th className="px-8 py-4 text-left font-black">User</th>
+                        <th className="px-8 py-4 text-left font-black">Role</th>
+                        <th className="px-8 py-4 text-left font-black">Contact</th>
+                        <th className="px-8 py-4 text-right font-black">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {loading ? (
+                      [1,2,3].map(i => <SkeletonRow key={i} />)
+                    ) : (
+                      allUsers.map(user => (
+                        <tr key={user.uid} className="hover:bg-slate-50/50 transition-colors">
+                           <td className="px-8 py-6">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
+                                    <img src={user.photoURL || `https://ui-avatars.com/api/?name=${user.firstName}&background=0D9488&color=fff`} alt="" className="w-full h-full object-cover" />
+                                 </div>
+                                 <div className="leading-tight">
+                                    <p className="font-black text-slate-800 tracking-tight text-sm uppercase">{user.firstName} {user.surname}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 tracking-widest truncate max-w-[150px]">{user.email}</p>
+                                 </div>
+                              </div>
+                           </td>
+                           <td className="px-8 py-6">
+                              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${user.role === 'worker' ? 'bg-brand-green/10 text-brand-green' : 'bg-slate-100 text-slate-600'}`}>
+                                 {user.role}
+                              </span>
+                           </td>
+                           <td className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                              {user.phone || 'No Phone'}<br/>
+                              {user.location || 'No Location'}
+                           </td>
+                           <td className="px-8 py-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                  <button 
+                                    onClick={() => {
+                                      setSelectedUser(user);
+                                      setEditUserData(user);
+                                    }}
+                                    className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-brand-green hover:text-white transition-all shadow-sm"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button 
+                                    onClick={async () => {
+                                      if(window.confirm('Delete user profile?')) {
+                                        await deleteDoc(doc(db, 'users', user.uid));
+                                        fetchAllUsers();
+                                      }
+                                    }}
+                                    className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                           </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+               ) : activeTab === 'workers' ? (
                 <table className="w-full">
                   <thead>
                     <tr className="bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
@@ -812,6 +981,153 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                      </button>
                   </div>
                </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+        {/* Create / Edit User Modal */}
+        <AnimatePresence>
+          {(selectedUser || isCreatingUser) && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => { setSelectedUser(null); setIsCreatingUser(false); setEditUserData({}); }}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden"
+              >
+                <div className="p-10">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{isCreatingUser ? 'Create New User' : 'Edit User Profile'}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Manual Profile Management</p>
+                    </div>
+                    <button onClick={() => { setSelectedUser(null); setIsCreatingUser(false); setEditUserData({}); }} className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-100 transition-all">
+                      <XCircle size={20} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
+                    <div className="flex items-center gap-6 mb-4">
+                      <div className="relative group">
+                        <div className="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center group-hover:border-brand-green transition-colors shadow-inner">
+                          {editUserData.photoURL ? (
+                            <img src={editUserData.photoURL} className="w-full h-full object-cover" alt="Preview" />
+                          ) : (
+                            <Camera className="text-slate-300" size={28} />
+                          )}
+                        </div>
+                        <input 
+                          type="file"
+                          accept="image/*"
+                          id="admin-user-photo"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, (base64) => setEditUserData({...editUserData, photoURL: base64}))}
+                        />
+                        <label 
+                          htmlFor="admin-user-photo"
+                          className="absolute -bottom-2 -right-2 w-10 h-10 bg-white border border-slate-200 rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:bg-brand-green hover:text-white transition-all transform hover:scale-110"
+                        >
+                          <Camera size={16} />
+                        </label>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Account Role</label>
+                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                          {(['worker', 'employer'] as const).map(role => (
+                            <button 
+                              key={role}
+                              onClick={() => setEditUserData({...editUserData, role})}
+                              className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${editUserData.role === role ? 'bg-white shadow-sm text-brand-green' : 'text-slate-400'}`}
+                            >
+                              {role}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">First Name</label>
+                        <input 
+                          value={editUserData.firstName || ''}
+                          onChange={e => setEditUserData({...editUserData, firstName: e.target.value})}
+                          className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-brand-green transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Surname</label>
+                        <input 
+                          value={editUserData.surname || ''}
+                          onChange={e => setEditUserData({...editUserData, surname: e.target.value})}
+                          className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-brand-green transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Email Address</label>
+                      <input 
+                        type="email"
+                        value={editUserData.email || ''}
+                        onChange={e => setEditUserData({...editUserData, email: e.target.value})}
+                        disabled={!isCreatingUser}
+                        className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-brand-green transition-all disabled:opacity-50"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Phone No.</label>
+                        <input 
+                          value={editUserData.phone || ''}
+                          onChange={e => setEditUserData({...editUserData, phone: e.target.value})}
+                          className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-brand-green transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">WhatsApp</label>
+                        <input 
+                          value={editUserData.whatsapp || ''}
+                          onChange={e => setEditUserData({...editUserData, whatsapp: e.target.value})}
+                          className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-brand-green transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Location</label>
+                      <input 
+                        value={editUserData.location || ''}
+                        onChange={e => setEditUserData({...editUserData, location: e.target.value})}
+                        className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-brand-green transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-10 flex gap-4">
+                    <button 
+                      onClick={() => { setSelectedUser(null); setIsCreatingUser(false); setEditUserData({}); }}
+                      className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-[20px] font-black text-xs uppercase tracking-widest"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={isCreatingUser ? handleCreateUser : handleUpdateUser}
+                      disabled={isSaving}
+                      className="flex-[2] py-4 bg-slate-900 text-white rounded-[20px] font-black text-xs uppercase tracking-widest shadow-xl hover:bg-brand-green transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                    >
+                      {isSaving ? <Loader2 className="animate-spin" size={16} /> : <>{isCreatingUser ? 'Create Profile' : 'Save Profile Changes'}</>}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           )}
         </AnimatePresence>

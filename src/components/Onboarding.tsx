@@ -19,6 +19,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
   const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
   const [verificationFile, setVerificationFile] = useState<string | null>(null);
   
   // Form State
@@ -35,6 +36,17 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
     bio: '',
     employerStatus: 'Mr' as EmployerStatus
   });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoURL(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +104,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
     }
   };
 
-  const saveProfile = async (uid: string, userEmail: string, photoURL: string | null) => {
+  const saveProfile = async (uid: string, userEmail: string, googlePhotoURL: string | null) => {
     // Basic profile creation
     await setDoc(doc(db, 'users', uid), {
       uid,
@@ -103,7 +115,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
       phone: formData.phone,
       whatsapp: formData.whatsapp,
       location: formData.location,
-      photoURL: photoURL || `https://ui-avatars.com/api/?name=${formData.firstName || userEmail.split('@')[0]}&background=0D9488&color=fff`,
+      photoURL: photoURL || googlePhotoURL || `https://ui-avatars.com/api/?name=${formData.firstName || userEmail.split('@')[0]}&background=0D9488&color=fff`,
       employerStatus: role === 'employer' ? formData.employerStatus : null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -384,6 +396,35 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">Tell us a bit about yourself</p>
 
                 <div className="space-y-6">
+                  <div className="flex items-center gap-6 mb-8">
+                    <div className="relative group">
+                      <div className="w-20 h-20 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center group-hover:border-brand-green transition-colors">
+                        {photoURL ? (
+                          <img src={photoURL} className="w-full h-full object-cover" alt="Preview" />
+                        ) : (
+                          <Upload className="text-slate-300" size={24} />
+                        )}
+                      </div>
+                      <input 
+                        type="file"
+                        accept="image/*"
+                        id="profile-photo-onboarding"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                      <label 
+                        htmlFor="profile-photo-onboarding"
+                        className="absolute -bottom-2 -right-2 w-8 h-8 bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all"
+                      >
+                        <UserPlus size={14} className="text-brand-green" />
+                      </label>
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-800 text-xs uppercase tracking-widest leading-none">Profile Image</h4>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1">Upload a professional headshot</p>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">First Name</label>

@@ -402,6 +402,17 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      callback(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleRequestVerification = async () => {
     if (!profile) return;
     try {
@@ -990,13 +1001,21 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
                         </div>
                     </div>
                     <div className="flex-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Profile Image URL</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Upload Profile Photo</label>
                         <input 
-                            value={userProfileData.photoURL || ''}
-                            onChange={e => setUserProfileData({...userProfileData, photoURL: e.target.value})}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-brand-green"
-                            placeholder="https://..."
+                            type="file"
+                            accept="image/*"
+                            id="profile-upload"
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(e, (base64) => setUserProfileData({...userProfileData, photoURL: base64}))}
                         />
+                        <label 
+                            htmlFor="profile-upload"
+                            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 transition-colors"
+                        >
+                            <span className="text-slate-500">{userProfileData.photoURL ? 'Photo selected' : 'Choose file...'}</span>
+                            <div className="px-3 py-1 bg-white rounded-lg border border-slate-200 shadow-sm text-[9px] uppercase tracking-widest">Browse</div>
+                        </label>
                     </div>
                  </div>
 
