@@ -13,11 +13,12 @@ import { useAuth } from '../AuthContext';
 
 export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const { user: currentUser } = useAuth();
-  const [requests, setRequests] = useState<(VerificationRequest & { worker: User & { profile: WorkerProfile } })[]>([]);
+  const [requests, setRequests] = useState<(VerificationRequest & { worker?: User & { profile: WorkerProfile }; user?: User })[]>([]);
+  const [employerRequests, setEmployerRequests] = useState<(VerificationRequest & { user: User })[]>([]);
   const [allWorkers, setAllWorkers] = useState<{ user: User; profile: WorkerProfile }[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'workers' | 'settings'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'workers' | 'employer_verifications' | 'settings'>('pending');
   
   // Site settings state
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -34,6 +35,8 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
       fetchWorkers();
     } else if (activeTab === 'settings') {
       fetchSettings();
+    } else if (activeTab === 'employer_verifications') {
+      fetchEmployerRequests();
     } else {
       fetchRequests();
     }
@@ -83,7 +86,8 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
     try {
       const q = query(
         collection(db, 'verifications'), 
-        where('status', '==', activeTab)
+        where('status', '==', activeTab),
+        where('type', '==', 'worker_verification')
       );
       const snap = await getDocs(q);
       
@@ -106,6 +110,35 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
       setRequests(list);
     } catch (err) {
       console.error("Admin fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEmployerRequests = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'verifications'), 
+        where('type', '==', 'employer_verification'),
+        where('status', '==', 'pending')
+      );
+      const snap = await getDocs(q);
+      
+      const list = await Promise.all(snap.docs.map(async (docSnap) => {
+        const vReq = { id: docSnap.id, ...docSnap.data() } as VerificationRequest;
+        const userRef = doc(db, 'users', vReq.userId);
+        const uSnap = await getDoc(userRef);
+        
+        return {
+          ...vReq,
+          user: uSnap.data() as User
+        };
+      }));
+
+      setEmployerRequests(list);
+    } catch (err) {
+      console.error("Admin employer fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -183,6 +216,25 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
     }
   };
 
+  const handleVerifyEmployer = async (requestId: string, userId: string, approved: boolean) => {
+    try {
+      await updateDoc(doc(db, 'verifications', requestId), {
+        status: approved ? 'approved' : 'rejected',
+        reviewedBy: currentUser?.uid,
+        updatedAt: serverTimestamp()
+      });
+
+      await updateDoc(doc(db, 'users', userId), {
+        isVerified: approved,
+        updatedAt: serverTimestamp()
+      });
+
+      fetchEmployerRequests();
+    } catch (err) {
+      console.error("Employer verification update error:", err);
+    }
+  };
+
   const handleVerify = async (requestId: string, userId: string, approved: boolean) => {
     try {
       await updateDoc(doc(db, 'verifications', requestId), {
@@ -227,21 +279,21 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
 
     const photos = [
       'https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1523910367623-6827e2db34a9?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1507152832244-10d45c7eda57?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1522529599102-193c0d7607b2?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1523910367623-6827e2db34a9?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&q=80&w=400&h=400'
+      'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&q=80&w=400&h=400'
     ];
 
     const fullBodyPhotos = [
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=600&h=900',
       'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=600&h=900',
-      'https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?auto=format&fit=crop&q=80&w=600&h=900'
+      'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&q=80&w=600&h=900'
     ];
 
     try {
@@ -311,7 +363,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Admin Control</h1>
           </div>
           <div className="flex bg-slate-100 p-1 rounded-xl">
-             {['pending', 'approved', 'rejected', 'workers', 'settings'].map((tab: any) => (
+             {['pending', 'approved', 'rejected', 'workers', 'employer_verifications', 'settings'].map((tab: any) => (
                <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -319,7 +371,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                   activeTab === tab ? 'bg-white shadow-sm text-brand-green' : 'text-slate-400'
                 }`}
                >
-                {tab}
+                {tab.replace('_', ' ')}
                </button>
              ))}
           </div>
@@ -398,6 +450,62 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                         </button>
                     </div>
                 </div>
+              ) : activeTab === 'employer_verifications' ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50">
+                        <th className="px-8 py-4 text-left font-black">Employer</th>
+                        <th className="px-8 py-4 text-left font-black">Email</th>
+                        <th className="px-8 py-4 text-left font-black">Status</th>
+                        <th className="px-8 py-4 text-right font-black">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {loading ? (
+                      [1,2,3].map(i => <SkeletonRow key={i} />)
+                    ) : (
+                      employerRequests.map(req => (
+                        <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
+                           <td className="px-8 py-6">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
+                                    <img src={req.user?.photoURL || `https://ui-avatars.com/api/?name=${req.user?.firstName}&background=0D9488&color=fff`} alt="" className="w-full h-full object-cover" />
+                                 </div>
+                                 <div className="leading-tight">
+                                    <p className="font-black text-slate-800 tracking-tight text-sm uppercase">{req.user?.firstName} {req.user?.surname}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 tracking-widest">{req.user?.role}</p>
+                                 </div>
+                              </div>
+                           </td>
+                           <td className="px-8 py-6 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                              {req.user?.email}
+                           </td>
+                           <td className="px-8 py-6">
+                              <span className={`px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full text-[10px] font-black uppercase tracking-widest`}>
+                                 {req.status}
+                              </span>
+                           </td>
+                           <td className="px-8 py-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                  <button 
+                                    onClick={() => handleVerifyEmployer(req.id, req.userId, true)}
+                                    className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100"
+                                  >
+                                    Approve Profile
+                                  </button>
+                                  <button 
+                                    onClick={() => handleVerifyEmployer(req.id, req.userId, false)}
+                                    className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all border border-rose-100"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                           </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               ) : activeTab === 'workers' ? (
                 <table className="w-full">
                   <thead>
@@ -491,7 +599,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                            <td className="px-8 py-6">
                               <div className="flex items-center gap-3">
                                  <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
-                                    <img src={req.worker.photoURL || `https://ui-avatars.com/api/?name=${req.worker.firstName}`} alt="" className="w-full h-full object-cover" />
+                                    <img src={req.worker.photoURL || `https://ui-avatars.com/api/?name=${req.worker.firstName}&background=0D9488&color=fff`} alt="" className="w-full h-full object-cover" />
                                  </div>
                                  <div className="leading-tight">
                                     <p className="font-black text-slate-800 tracking-tight text-sm uppercase">{req.worker.firstName} {req.worker.surname}</p>

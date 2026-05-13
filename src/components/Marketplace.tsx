@@ -4,11 +4,11 @@ import {
   Search, Filter, MapPin, Star, ShieldCheck, 
   MessageCircle, Loader2, X, ChevronRight,
   Briefcase, Award, Languages, DollarSign, Clock,
-  ArrowRight, Phone, FileCheck
+  ArrowRight, Phone, FileCheck, Send, User as UserIcon
 } from 'lucide-react';
-import { collection, query, where, getDocs, limit, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc, setDoc, serverTimestamp, addDoc, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, WorkerProfile, WORKER_CATEGORIES } from '../types';
+import { User, WorkerProfile, WORKER_CATEGORIES, Chat, Message } from '../types';
 import { useAuth } from '../AuthContext';
 import { useSettings } from '../SettingsContext';
 
@@ -28,7 +28,7 @@ export const WorkerCard = ({ worker, profile, onClick }: WorkerCardProps) => {
     >
       <div className="relative aspect-[4/5] overflow-hidden">
         <img 
-          src={worker.photoURL || `https://ui-avatars.com/api/?name=${worker.firstName}+${worker.surname}&background=random`} 
+          src={worker.photoURL || `https://ui-avatars.com/api/?name=${worker.firstName}+${worker.surname}&background=0D9488&color=fff`} 
           alt={worker.firstName} 
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         />
@@ -93,11 +93,47 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<WorkerProfile>>({});
   const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [filterAvailability, setFilterAvailability] = useState<string>('All');
+  const [filterExperience, setFilterExperience] = useState<number>(0);
+  const [filterMinRating, setFilterMinRating] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Messaging state
+  const [activeChat, setActiveChat] = useState<Chat | null>(null);
+  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+  const [isChatsListOpen, setIsChatsListOpen] = useState(false);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [isProfileEditing, setIsProfileEditing] = useState(false);
+  
+  const { updateProfile } = useAuth();
+  
+  const [userProfileData, setUserProfileData] = useState<Partial<User>>({});
+
+  useEffect(() => {
+    if (profile) {
+      setUserProfileData({
+        firstName: profile.firstName,
+        surname: profile.surname,
+        phone: profile.phone,
+        location: profile.location,
+        photoURL: profile.photoURL
+      });
+    }
+  }, [profile]);
 
   useEffect(() => {
     fetchWorkers();
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('participants', 'array-contains', profile.uid), orderBy('lastMessageAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setChats(snap.docs.map(d => ({ id: d.id, ...d.data() } as Chat)));
+    });
+    return () => unsubscribe();
+  }, [profile]);
 
   const handleDeleteWorker = async (uid: string) => {
     if (!window.confirm('Are you sure you want to delete this worker profile? This cannot be undone.')) return;
@@ -164,21 +200,21 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
 
     const photos = [
       'https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1523910367623-6827e2db34a9?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1507152832244-10d45c7eda57?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1522529599102-193c0d7607b2?auto=format&fit=crop&q=80&w=400&h=400',
+      'https://images.unsplash.com/photo-1523910367623-6827e2db34a9?auto=format&fit=crop&q=80&w=400&h=400',
       'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=400&h=400',
-      'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&q=80&w=400&h=400'
+      'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&q=80&w=400&h=400'
     ];
 
     const fullBodyPhotos = [
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=600&h=900',
       'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=600&h=900',
-      'https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?auto=format&fit=crop&q=80&w=600&h=900'
+      'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&q=80&w=600&h=900'
     ];
 
     try {
@@ -257,12 +293,133 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
     }
   };
 
+  // Handle back button for overlays
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedWorker) setSelectedWorker(null);
+      if (isMessagingOpen) setIsMessagingOpen(false);
+      if (isProfileEditing) setIsProfileEditing(false);
+      if (isChatsListOpen) setIsChatsListOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedWorker, isMessagingOpen, isProfileEditing, isChatsListOpen]);
+
+  const openWorker = (w: { user: User; profile: WorkerProfile }) => {
+    window.history.pushState({ type: 'overlay' }, '');
+    setSelectedWorker(w);
+  };
+
+  const openMessaging = (chat: Chat) => {
+    window.history.pushState({ type: 'overlay' }, '');
+    setActiveChat(chat);
+    setIsMessagingOpen(true);
+  };
+
+  const openProfileEditing = () => {
+    window.history.pushState({ type: 'overlay' }, '');
+    setIsProfileEditing(true);
+  };
+
+  const openChatsList = () => {
+    window.history.pushState({ type: 'overlay' }, '');
+    setIsChatsListOpen(true);
+  };
   const filteredWorkers = workers.filter(w => {
     const matchesCategory = filterCategory === 'All' || w.profile.category === filterCategory;
-    const matchesSearch = w.user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          w.user.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    const matchesAvailability = filterAvailability === 'All' || w.profile.availability === filterAvailability;
+    const matchesExperience = w.profile.yearsExperience >= filterExperience;
+    const matchesRating = w.profile.rating >= filterMinRating;
+    
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = w.user.firstName.toLowerCase().includes(searchLower) || 
+                          w.user.surname.toLowerCase().includes(searchLower) ||
+                          w.user.location.toLowerCase().includes(searchLower) ||
+                          w.profile.bio.toLowerCase().includes(searchLower) ||
+                          w.profile.skills.some(s => s.toLowerCase().includes(searchLower));
+                          
+    return matchesCategory && matchesAvailability && matchesExperience && matchesRating && matchesSearch;
   });
+
+  const handleStartChat = async (worker: User) => {
+    if (!profile) {
+      onAuth();
+      return;
+    }
+    
+    if (profile.uid === worker.uid) {
+      alert("You cannot message yourself.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Check if chat exists
+      const chatsRef = collection(db, 'chats');
+      const q = query(chatsRef, where('participants', 'array-contains', profile.uid));
+      const snap = await getDocs(q);
+      
+      let existingChat = snap.docs.find(docSnap => {
+        const data = docSnap.data() as Chat;
+        return data.participants.includes(worker.uid);
+      });
+
+      if (existingChat) {
+        setActiveChat({ id: existingChat.id, ...existingChat.data() } as Chat);
+      } else {
+        // Create new chat
+        const newChatData = {
+          participants: [profile.uid, worker.uid],
+          createdAt: serverTimestamp(),
+          lastMessage: '',
+          lastMessageAt: serverTimestamp(),
+          participantDetails: {
+            [profile.uid]: { firstName: profile.firstName, photoURL: profile.photoURL },
+            [worker.uid]: { firstName: worker.firstName, photoURL: worker.photoURL }
+          }
+        };
+        const docRef = await addDoc(collection(db, 'chats'), newChatData);
+        setActiveChat({ id: docRef.id, ...newChatData } as Chat);
+      }
+      setIsMessagingOpen(true);
+    } catch (err) {
+      console.error("Chat error:", err);
+      alert("Failed to start chat.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      await updateProfile(userProfileData);
+      setIsProfileEditing(false);
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error("Update profile error:", err);
+      alert("Failed to update profile.");
+    }
+  };
+
+  const handleRequestVerification = async () => {
+    if (!profile) return;
+    try {
+      setLoading(true);
+      await addDoc(collection(db, 'verifications'), {
+        userId: profile.uid,
+        status: 'pending',
+        type: 'employer_verification',
+        submittedAt: serverTimestamp()
+      });
+      alert("Verification request submitted! Admin will review your profile.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit request.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleWhatsApp = (worker: User) => {
     const text = encodeURIComponent(`Hi ${worker.firstName}, I saw your profile on ${settings?.siteName || 'ZIMBABWE MAIDS CENTRE'} and I'm interested in hiring you. Are you available?`);
@@ -302,16 +459,34 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
           <div className="flex items-center gap-4">
             {profile ? (
               <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
-                <div className="text-right hidden sm:block">
-                   <p className="text-xs font-bold text-slate-800 leading-none">{profile.firstName}</p>
-                   <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mt-1">{profile.role}</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-brand-green/10 overflow-hidden border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
-                  <img src={profile.photoURL || `https://ui-avatars.com/api/?name=${profile.firstName}`} alt="User" />
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="relative cursor-pointer hover:scale-110 transition-transform"
+                    onClick={openChatsList}
+                  >
+                    <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400">
+                      <MessageCircle size={20} />
+                    </div>
+                    {chats.length > 0 && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
+                        <span className="text-[8px] font-black text-white">{chats.length}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right hidden sm:block">
+                    <p className="text-xs font-bold text-slate-800 leading-none">{profile.firstName}</p>
+                    <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mt-1">{profile.role}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-brand-green/10 overflow-hidden border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform" onClick={openProfileEditing}>
+                    <img src={profile.photoURL || `https://ui-avatars.com/api/?name=${profile.firstName}&background=0D9488&color=fff`} alt="User" />
+                  </div>
                 </div>
               </div>
             ) : (
-              <button onClick={onAuth} className="px-6 py-2.5 bg-brand-green text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-trust">Sign In</button>
+              <div className="flex items-center gap-2">
+                <button onClick={onAuth} className="px-3 py-2 bg-white border-2 border-brand-green text-brand-green rounded-xl font-black text-[9px] uppercase tracking-widest transition-all">Login</button>
+                <button onClick={onAuth} className="px-3 py-2 bg-brand-green text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-trust transition-all">Sign Up</button>
+              </div>
             )}
           </div>
         </div>
@@ -345,6 +520,63 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
               </button>
             ))}
           </div>
+
+          <div className="mt-6 flex flex-wrap gap-6 items-center bg-white p-6 rounded-[32px] border border-slate-100 shadow-soft">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-brand-green" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Min Experience:</span>
+              <select 
+                value={filterExperience}
+                onChange={e => setFilterExperience(Number(e.target.value))}
+                className="bg-slate-50 border-none text-[10px] font-bold uppercase tracking-widest rounded-lg px-2 py-1 outline-none"
+              >
+                {[0, 2, 5, 10, 15].map(v => <option key={v} value={v}>{v}+ Yrs</option>)}
+              </select>
+            </div>
+            
+            <div className="w-px h-4 bg-slate-100" />
+
+            <div className="flex items-center gap-2">
+              <Star size={16} className="text-brand-gold" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Min Rating:</span>
+              <select 
+                value={filterMinRating}
+                onChange={e => setFilterMinRating(Number(e.target.value))}
+                className="bg-slate-50 border-none text-[10px] font-bold uppercase tracking-widest rounded-lg px-2 py-1 outline-none"
+              >
+                {[0, 3, 4, 5].map(v => <option key={v} value={v}>{v}+ Stars</option>)}
+              </select>
+            </div>
+
+            <div className="w-px h-4 bg-slate-100" />
+
+            <div className="flex items-center gap-2">
+              <Briefcase size={16} className="text-slate-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Availability:</span>
+              <select 
+                value={filterAvailability}
+                onChange={e => setFilterAvailability(e.target.value)}
+                className="bg-slate-50 border-none text-[10px] font-bold uppercase tracking-widest rounded-lg px-2 py-1 outline-none"
+              >
+                <option value="All">Any Status</option>
+                <option value="Available">Available Only</option>
+                <option value="Busy">Busy</option>
+              </select>
+            </div>
+            
+            <button 
+              onClick={() => {
+                setFilterCategory('All');
+                setFilterAvailability('All');
+                setFilterExperience(0);
+                setFilterMinRating(0);
+                setSearchQuery('');
+              }}
+              className="ml-auto text-[10px] font-black uppercase tracking-widest text-brand-green hover:underline"
+            >
+              Clear Filters
+            </button>
+          </div>
         </div>
 
         {/* Workers Grid */}
@@ -356,7 +588,7 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredWorkers.map(w => (
-              <WorkerCard key={w.user.uid} worker={w.user} profile={w.profile} onClick={() => setSelectedWorker(w)} />
+              <WorkerCard key={w.user.uid} worker={w.user} profile={w.profile} onClick={() => openWorker(w)} />
             ))}
           </div>
         )}
@@ -649,12 +881,20 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
               {/* Bottom Action Bar */}
               <div className="sticky bottom-0 left-0 w-full p-8 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex gap-4">
                 {(profile?.isPremium || isAdmin) ? (
-                  <button 
-                    onClick={() => handleWhatsApp(selectedWorker.user)}
-                    className="flex-1 py-5 bg-brand-green text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-trust hover:bg-emerald-800 transition-all"
-                  >
-                    <MessageCircle size={22} fill="currentColor" /> Direct WhatsApp Hire
-                  </button>
+                  <>
+                    <button 
+                      onClick={() => handleWhatsApp(selectedWorker.user)}
+                      className="flex-[2] py-5 bg-brand-green text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-trust hover:bg-emerald-800 transition-all"
+                    >
+                      <MessageCircle size={22} fill="currentColor" /> WhatsApp Hire
+                    </button>
+                    <button 
+                      onClick={() => openMessaging(activeChat || { id: '', participants: [profile!.uid, selectedWorker.user.uid], lastMessage: '', lastMessageAt: {} as any })}
+                      className="flex-1 py-5 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl hover:bg-slate-800 transition-all"
+                    >
+                      <MessageCircle size={18} /> Chat
+                    </button>
+                  </>
                 ) : (
                   <div className="flex-1 space-y-3">
                     <button 
@@ -676,6 +916,308 @@ export const Marketplace = ({ onAuth }: { onAuth: () => void }) => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Chat Room Overlay */}
+      <AnimatePresence>
+        {isMessagingOpen && activeChat && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-xl bg-white rounded-[40px] shadow-2xl flex flex-col h-[80vh] overflow-hidden"
+            >
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-green/10 overflow-hidden">
+                    <img 
+                      src={activeChat.participantDetails?.[activeChat.participants.find(p => p !== profile?.uid) || '']?.photoURL} 
+                      alt="" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tighter">
+                      {activeChat.participantDetails?.[activeChat.participants.find(p => p !== profile?.uid) || '']?.firstName}
+                    </h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> Live Chat Connected
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsMessagingOpen(false)}
+                  className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <ChatRoom chatId={activeChat.id} currentUserId={profile?.uid || ''} />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Profile Edit Modal */}
+      <AnimatePresence>
+        {isProfileEditing && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="w-full max-w-xl bg-white rounded-[40px] shadow-2xl overflow-hidden"
+            >
+              <div className="p-10 border-b border-slate-50 flex items-center justify-between">
+                 <div>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Your Profile</h2>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Update your personal information</p>
+                 </div>
+                 <button onClick={() => setIsProfileEditing(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                    <X size={24} />
+                 </button>
+              </div>
+
+              <div className="p-10 space-y-6">
+                 <div className="flex items-center gap-8 mb-8">
+                    <div className="relative group">
+                        <div className="w-24 h-24 rounded-[32px] bg-slate-100 overflow-hidden border-4 border-white shadow-xl">
+                            <img src={userProfileData.photoURL || `https://ui-avatars.com/api/?name=${userProfileData.firstName}`} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center rounded-[32px]">
+                            <UserIcon className="text-white" size={24} />
+                        </div>
+                    </div>
+                    <div className="flex-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Profile Image URL</label>
+                        <input 
+                            value={userProfileData.photoURL || ''}
+                            onChange={e => setUserProfileData({...userProfileData, photoURL: e.target.value})}
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-brand-green"
+                            placeholder="https://..."
+                        />
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">First Name</label>
+                        <input 
+                            value={userProfileData.firstName || ''}
+                            onChange={e => setUserProfileData({...userProfileData, firstName: e.target.value})}
+                            className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Surname Name</label>
+                        <input 
+                            value={userProfileData.surname || ''}
+                            onChange={e => setUserProfileData({...userProfileData, surname: e.target.value})}
+                            className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green"
+                        />
+                    </div>
+                 </div>
+
+                 <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">WhatsApp / Phone</label>
+                    <input 
+                        value={userProfileData.phone || ''}
+                        onChange={e => setUserProfileData({...userProfileData, phone: e.target.value})}
+                        className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green"
+                        placeholder="+263..."
+                    />
+                 </div>
+
+                 <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Location</label>
+                    <input 
+                        value={userProfileData.location || ''}
+                        onChange={e => setUserProfileData({...userProfileData, location: e.target.value})}
+                        className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-brand-green"
+                        placeholder="e.g. Harare, Zimbabwe"
+                    />
+                 </div>
+
+                 <button 
+                    onClick={handleUpdateProfile}
+                    className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-black text-sm uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3"
+                 >
+                    Save Profile Settings
+                 </button>
+
+                 {!profile?.isPremium && profile?.role === 'employer' && (
+                   <button 
+                    onClick={handleRequestVerification}
+                    className="w-full py-5 bg-brand-gold text-white rounded-[24px] font-black text-sm uppercase tracking-widest shadow-trust hover:bg-amber-600 transition-all flex items-center justify-center gap-3"
+                   >
+                    <Award size={20} /> Request Professional Badge
+                   </button>
+                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Chats List Drawer */}
+      <AnimatePresence>
+        {isChatsListOpen && (
+          <div className="fixed inset-0 z-[160] flex justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsChatsListOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col"
+            >
+              <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Messages</h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Connect with potential hires</p>
+                </div>
+                <button onClick={() => setIsChatsListOpen(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {chats.length > 0 ? chats.map(chat => {
+                  const otherParticipant = chat.participantDetails?.[chat.participants.find(p => p !== profile?.uid) || ''];
+                  return (
+                    <button 
+                      key={chat.id}
+                      onClick={() => {
+                        openMessaging(chat);
+                        setIsChatsListOpen(false);
+                      }}
+                      className="w-full p-6 bg-slate-50 rounded-3xl flex items-center gap-4 hover:bg-brand-green/5 transition-all group"
+                    >
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-200 border-2 border-white shadow-sm">
+                        <img src={otherParticipant?.photoURL} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <h4 className="font-black text-slate-800 tracking-tight text-lg group-hover:text-brand-green transition-colors">{otherParticipant?.firstName}</h4>
+                        <p className="text-xs font-bold text-slate-400 truncate max-w-[200px]">{chat.lastMessage || 'Start a conversation...'}</p>
+                      </div>
+                      <ChevronRight size={16} className="text-slate-300" />
+                    </button>
+                  );
+                }) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30">
+                    <MessageCircle size={64} className="mb-4" />
+                    <p className="text-sm font-black uppercase tracking-widest">No active chats yet</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ChatRoom = ({ chatId, currentUserId }: { chatId: string; currentUserId: string }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(100));
+    
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Message));
+      setMessages(list);
+      setTimeout(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }, 100);
+    });
+
+    return () => unsubscribe();
+  }, [chatId]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || sending) return;
+
+    setSending(true);
+    try {
+      const msgData = {
+        senderId: currentUserId,
+        text: newMessage,
+        createdAt: serverTimestamp()
+      };
+      await addDoc(collection(db, 'chats', chatId, 'messages'), msgData);
+      
+      // Update chat last message
+      await setDoc(doc(db, 'chats', chatId), {
+        lastMessage: newMessage,
+        lastMessageAt: serverTimestamp()
+      }, { merge: true });
+
+      setNewMessage('');
+    } catch (err) {
+      console.error("Send error:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden bg-slate-50">
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-8 space-y-4"
+      >
+        {messages.map(msg => (
+          <div 
+            key={msg.id}
+            className={`flex ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}
+          >
+            <div 
+              className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm font-medium shadow-sm ${
+                msg.senderId === currentUserId 
+                ? 'bg-brand-green text-white rounded-tr-none' 
+                : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
+              }`}
+            >
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {messages.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center opacity-30 text-center py-20">
+            <MessageCircle size={48} className="mb-4" />
+            <p className="text-xs font-black uppercase tracking-widest">Send a message to start hiring</p>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSend} className="p-8 bg-white border-t border-slate-100 flex gap-3">
+        <input 
+          value={newMessage}
+          onChange={e => setNewMessage(e.target.value)}
+          placeholder="Type your message..."
+          className="flex-1 px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-brand-green transition-all"
+        />
+        <button 
+          type="submit"
+          disabled={!newMessage.trim() || sending}
+          className="w-14 h-14 bg-brand-green text-white rounded-2xl flex items-center justify-center shadow-trust hover:bg-emerald-800 transition-all disabled:opacity-50"
+        >
+          <Send size={20} />
+        </button>
+      </form>
     </div>
   );
 };

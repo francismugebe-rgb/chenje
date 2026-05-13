@@ -71,12 +71,18 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
                 ))}
             </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <button 
               onClick={() => onGetStarted()}
-              className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[8px] font-black uppercase tracking-[0.2em] hover:bg-brand-green transition-all shadow-lg md:px-5 md:py-2.5 md:rounded-xl md:text-[9px]"
+              className="px-3 py-2 bg-white border-2 border-brand-green text-brand-green rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
             >
-              Sign In
+              Login
+            </button>
+            <button 
+              onClick={() => onGetStarted()}
+              className="px-3 py-2 bg-brand-green text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-trust transition-all"
+            >
+              Sign Up
             </button>
             <button onClick={onBrowse} className="p-2 text-slate-400 hover:text-brand-green transition-all md:hidden">
               <Search size={20} />
@@ -122,9 +128,14 @@ export const LandingPage = ({ onGetStarted, onBrowse, onAdminPortal }: {
 
             <div className="mt-12 flex items-center gap-6">
               <div className="flex -space-x-4">
-                {[1,2,3,4].map(i => (
+                {[
+                  '1531123897727-8f129e16fd3c',
+                  '1589156280159-27698a70f29e',
+                  '1519085360753-af0119f7cbe7',
+                  '1507152832244-10d45c7eda57'
+                ].map((id, i) => (
                   <div key={i} className="w-10 h-10 border-2 border-white rounded-full bg-slate-200 overflow-hidden">
-                    <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
+                    <img src={`https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=100&h=100`} alt="User" />
                   </div>
                 ))}
               </div>

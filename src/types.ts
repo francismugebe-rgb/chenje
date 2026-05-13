@@ -55,10 +55,27 @@ export interface Review {
 export interface VerificationRequest {
   id: string;
   userId: string;
-  policeClearanceUrl: string;
+  policeClearanceUrl?: string; // Optional for non-worker verifications
   status: 'pending' | 'approved' | 'rejected';
+  type: 'worker_verification' | 'employer_verification';
   submittedAt: any;
   reviewedBy?: string;
+}
+
+export interface Chat {
+  id: string;
+  participants: string[];
+  lastMessage?: string;
+  lastMessageAt?: any;
+  createdAt: any;
+  participantDetails?: { [userId: string]: { firstName: string; photoURL?: string } };
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  createdAt: any;
 }
 
 export const WORKER_CATEGORIES = [

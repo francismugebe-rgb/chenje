@@ -16,15 +16,18 @@ const Root = () => {
   // Sync state with browser history
   React.useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
+      // If it's an overlay pop, Marketplace handles it locally
+      if (event.state && event.state.type === 'overlay') {
+        return;
+      }
+
       if (event.state && event.state.view) {
         setView(event.state.view);
       } else if (view !== 'landing') {
         const confirmExit = window.confirm("Do you want to exit the app?");
         if (confirmExit) {
-          // In web apps we can't really "exit", but we can go back to landing
           setView('landing');
         } else {
-          // Push landing back to history so we stay here
           window.history.pushState({ view: 'landing' }, '');
         }
       }

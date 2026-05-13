@@ -55,6 +55,29 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["fromId", "toWorkerId", "rating"]
+    },
+    "Chat": {
+      "title": "Chat Session",
+      "description": "A conversation between an employer and a worker.",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participants", "createdAt"]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "Individual messages within a chat.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "createdAt"]
     }
   },
   "firestore": {
@@ -69,6 +92,14 @@
     "/reviews/{reviewId}": {
       "schema": "Review",
       "description": "Worker ratings and reviews."
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Messaging sessions."
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages within a chat."
     },
     "/verifications/{verifyId}": {
       "schema": {

@@ -103,7 +103,7 @@ export const Onboarding = ({ onComplete, initialRole = null, initialLogin = fals
       phone: formData.phone,
       whatsapp: formData.whatsapp,
       location: formData.location,
-      photoURL: photoURL || `https://ui-avatars.com/api/?name=${formData.firstName || userEmail.split('@')[0]}&background=random`,
+      photoURL: photoURL || `https://ui-avatars.com/api/?name=${formData.firstName || userEmail.split('@')[0]}&background=0D9488&color=fff`,
       employerStatus: role === 'employer' ? formData.employerStatus : null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()

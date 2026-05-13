@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { User as UserType } from './types';
 
@@ -9,6 +9,7 @@ interface AuthContextType {
   profile: UserType | null;
   loading: boolean;
   isAdmin: boolean;
+  updateProfile: (data: Partial<UserType>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  updateProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -24,6 +26,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const updateProfile = async (data: Partial<UserType>) => {
+    if (!user) throw new Error("Not authenticated");
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+  };
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {

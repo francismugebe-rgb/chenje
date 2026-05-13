@@ -67,6 +67,19 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /chats/{chatId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && request.auth.uid in incoming().participants;
+      allow update: if isSignedIn() && request.auth.uid in resource.data.participants;
+    }
+
+    match /chats/{chatId}/messages/{messageId} {
+      allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      allow create: if isSignedIn() && 
+                    request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
+                    incoming().senderId == request.auth.uid;
+    }
+
     match /verifications/{verifyId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
